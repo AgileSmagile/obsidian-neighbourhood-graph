@@ -1,0 +1,10 @@
+{
+  "id": "neighbourhood-graph",
+  "name": "Neighbourhood Graph",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Interactive D3.js force-directed graph showing the current note's neighbourhood in a sidebar panel. Nodes connected by shared tags and backlinks.",
+  "author": "James Farley",
+  "authorUrl": "https://smagile.co",
+  "isDesktopOnly": false
+}
