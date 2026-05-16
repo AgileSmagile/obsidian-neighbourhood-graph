@@ -1,8 +1,7 @@
-import { ItemView, WorkspaceLeaf, Setting, type TFile, debounce } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Setting, type TFile, debounce, setIcon } from 'obsidian';
 import type NeighbourhoodGraphPlugin from './main';
 import { buildNeighbourhood } from './graph-data';
 import { GraphRenderer } from './graph-renderer';
-import type { ColourGroup } from './types';
 
 export const VIEW_TYPE = 'neighbourhood-graph';
 
@@ -11,7 +10,6 @@ export class NeighbourhoodGraphView extends ItemView {
 	private renderer: GraphRenderer | null = null;
 	private graphContainer: HTMLElement | null = null;
 	private settingsPanel: HTMLElement | null = null;
-	private legendPanel: HTMLElement | null = null;
 	private focusFile: TFile | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: NeighbourhoodGraphPlugin) {
@@ -36,25 +34,34 @@ export class NeighbourhoodGraphView extends ItemView {
 		container.empty();
 		container.addClass('neighbourhood-graph-container');
 
-		// Header actions — matching Obsidian graph view pattern
-		this.addAction('settings', 'Graph settings', () => {
-			this.settingsPanel?.toggleClass('is-hidden', !this.settingsPanel?.hasClass('is-hidden'));
+		// Graph canvas takes the full space
+		this.graphContainer = container.createDiv({ cls: 'neighbourhood-graph-canvas' });
+
+		// Floating control buttons (top-right of canvas)
+		const controlBar = this.graphContainer.createDiv({ cls: 'ng-control-bar' });
+
+		const settingsBtn = controlBar.createDiv({ cls: 'ng-control-btn', attr: { 'aria-label': 'Graph settings' } });
+		setIcon(settingsBtn, 'settings');
+		settingsBtn.addEventListener('click', () => {
+			if (this.settingsPanel) {
+				const isHidden = this.settingsPanel.hasClass('ng-panel-hidden');
+				this.settingsPanel.toggleClass('ng-panel-hidden', !isHidden);
+			}
 		});
 
-		this.addAction('help-circle', 'Legend and help', () => {
-			this.legendPanel?.toggleClass('is-hidden', !this.legendPanel?.hasClass('is-hidden'));
-		});
-
-		// Settings panel (collapsible, hidden by default)
-		this.settingsPanel = container.createDiv({ cls: 'neighbourhood-graph-panel is-hidden' });
+		// Floating settings panel (overlays graph)
+		this.settingsPanel = this.graphContainer.createDiv({ cls: 'ng-settings-panel ng-panel-hidden' });
 		this.buildSettingsPanel();
 
-		// Legend panel (collapsible, hidden by default)
-		this.legendPanel = container.createDiv({ cls: 'neighbourhood-graph-panel is-hidden' });
-		this.buildLegendPanel();
-
-		// Graph area
-		this.graphContainer = container.createDiv({ cls: 'neighbourhood-graph-canvas' });
+		// Persistent mini legend at bottom
+		const legend = this.graphContainer.createDiv({ cls: 'ng-mini-legend' });
+		legend.innerHTML = [
+			'<span class="ng-legend-item"><span class="ng-shape-circle ng-shape-focus"></span> Focus</span>',
+			'<span class="ng-legend-item"><span class="ng-shape-circle"></span> Note</span>',
+			'<span class="ng-legend-item"><span class="ng-shape-diamond"></span> Tag</span>',
+			'<span class="ng-legend-item"><span class="ng-shape-square"></span> Link</span>',
+			'<span class="ng-legend-item ng-legend-hint">Click = recentre \u00b7 Double-click = open</span>',
+		].join('');
 
 		// Listen for navigation
 		this.registerEvent(
@@ -111,6 +118,14 @@ export class NeighbourhoodGraphView extends ItemView {
 
 		const data = buildNeighbourhood(this.focusFile, this.app, this.plugin.settings);
 
+		// Clear only the SVG and tooltip, preserve overlay elements
+		const svg = this.graphContainer.querySelector('svg');
+		if (svg) svg.remove();
+		const oldTooltip = this.graphContainer.querySelector('.neighbourhood-graph-tooltip');
+		if (oldTooltip) oldTooltip.remove();
+		const oldTruncated = this.graphContainer.querySelector('.ng-truncated');
+		if (oldTruncated) oldTruncated.remove();
+
 		if (this.renderer) {
 			this.renderer.destroy();
 		}
@@ -133,11 +148,8 @@ export class NeighbourhoodGraphView extends ItemView {
 		);
 		this.renderer.render(data);
 
-		// Truncation indicator
-		const existing = this.graphContainer.querySelector('.neighbourhood-graph-truncated');
-		if (existing) existing.remove();
 		if (data.truncated) {
-			const indicator = this.graphContainer.createDiv({ cls: 'neighbourhood-graph-truncated' });
+			const indicator = this.graphContainer.createDiv({ cls: 'ng-truncated' });
 			indicator.setText(`${data.truncated} more notes not shown`);
 		}
 	}
@@ -147,12 +159,9 @@ export class NeighbourhoodGraphView extends ItemView {
 		const panel = this.settingsPanel;
 		panel.empty();
 
-		panel.createEl('div', { text: 'Settings', cls: 'neighbourhood-graph-panel-heading' });
-
-		// Depth toggle
+		// Depth
 		new Setting(panel)
 			.setName('Highlight depth')
-			.setDesc('Tiers of connection shown on hover')
 			.addDropdown((drop) =>
 				drop
 					.addOption('1', '1 hop')
@@ -168,8 +177,10 @@ export class NeighbourhoodGraphView extends ItemView {
 		// Max neighbours
 		new Setting(panel)
 			.setName('Max neighbours')
-			.addText((text) =>
-				text
+			.addText((text) => {
+				text.inputEl.type = 'number';
+				text.inputEl.style.width = '60px';
+				return text
 					.setValue(String(this.plugin.settings.maxNeighbours))
 					.onChange(async (val) => {
 						const num = parseInt(val, 10);
@@ -178,10 +189,10 @@ export class NeighbourhoodGraphView extends ItemView {
 							await this.plugin.saveSettings();
 							this.rebuild();
 						}
-					}),
-			);
+					});
+			});
 
-		// Show path toggle
+		// Show path
 		new Setting(panel)
 			.setName('Show path in tooltip')
 			.addToggle((toggle) =>
@@ -195,7 +206,7 @@ export class NeighbourhoodGraphView extends ItemView {
 			);
 
 		// Physics sliders
-		panel.createEl('div', { text: 'Physics', cls: 'neighbourhood-graph-panel-subheading' });
+		panel.createEl('div', { text: 'Physics', cls: 'ng-section-label' });
 
 		const sliders: Array<{
 			label: string;
@@ -209,11 +220,11 @@ export class NeighbourhoodGraphView extends ItemView {
 			{ label: 'Link pull', key: 'linkPull', min: 1, max: 10 },
 		];
 
-		const grid = panel.createDiv({ cls: 'neighbourhood-graph-slider-grid' });
+		const grid = panel.createDiv({ cls: 'ng-slider-grid' });
 		for (const s of sliders) {
-			const wrapper = grid.createDiv({ cls: 'neighbourhood-graph-slider-wrapper' });
-			wrapper.createEl('label', { text: s.label, cls: 'neighbourhood-graph-slider-label' });
-			const input = wrapper.createEl('input', { type: 'range', cls: 'neighbourhood-graph-slider' });
+			const wrapper = grid.createDiv({ cls: 'ng-slider-wrapper' });
+			wrapper.createEl('label', { text: s.label, cls: 'ng-slider-label' });
+			const input = wrapper.createEl('input', { type: 'range', cls: 'ng-slider' });
 			input.min = String(s.min);
 			input.max = String(s.max);
 			input.value = String(this.plugin.settings[s.key]);
@@ -229,13 +240,12 @@ export class NeighbourhoodGraphView extends ItemView {
 		}
 
 		// Colours
-		panel.createEl('div', { text: 'Colours', cls: 'neighbourhood-graph-panel-subheading' });
+		panel.createEl('div', { text: 'Colours', cls: 'ng-section-label' });
 
 		new Setting(panel)
 			.setName('Default node')
 			.addColorPicker((picker) =>
-				picker
-					.setValue(this.plugin.settings.defaultNodeColour)
+				picker.setValue(this.plugin.settings.defaultNodeColour)
 					.onChange(async (val) => {
 						this.plugin.settings.defaultNodeColour = val;
 						await this.plugin.saveSettings();
@@ -246,8 +256,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		new Setting(panel)
 			.setName('Tag concept')
 			.addColorPicker((picker) =>
-				picker
-					.setValue(this.plugin.settings.tagConceptColour)
+				picker.setValue(this.plugin.settings.tagConceptColour)
 					.onChange(async (val) => {
 						this.plugin.settings.tagConceptColour = val;
 						await this.plugin.saveSettings();
@@ -258,8 +267,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		new Setting(panel)
 			.setName('Backlink concept')
 			.addColorPicker((picker) =>
-				picker
-					.setValue(this.plugin.settings.backlinkConceptColour)
+				picker.setValue(this.plugin.settings.backlinkConceptColour)
 					.onChange(async (val) => {
 						this.plugin.settings.backlinkConceptColour = val;
 						await this.plugin.saveSettings();
@@ -268,18 +276,18 @@ export class NeighbourhoodGraphView extends ItemView {
 			);
 
 		// Colour groups
-		panel.createEl('div', { text: 'Colour groups', cls: 'neighbourhood-graph-panel-subheading' });
+		panel.createEl('div', { text: 'Colour groups', cls: 'ng-section-label' });
 		panel.createEl('p', {
-			text: 'Query-colour pairs: "path:folder/", "tag:#name", or text. First match wins.',
-			cls: 'neighbourhood-graph-panel-desc',
+			text: '"path:folder/", "tag:#name", or text. First match wins.',
+			cls: 'ng-panel-hint',
 		});
 
 		const groupsContainer = panel.createDiv();
 		for (let i = 0; i < this.plugin.settings.colourGroups.length; i++) {
-			this.renderColourGroupInline(groupsContainer, i);
+			this.renderColourGroupRow(groupsContainer, i);
 		}
 
-		const addBtn = panel.createEl('button', { text: 'Add group', cls: 'neighbourhood-graph-add-group-btn' });
+		const addBtn = panel.createEl('button', { text: '+ Add group', cls: 'ng-add-group-btn' });
 		addBtn.addEventListener('click', async () => {
 			this.plugin.settings.colourGroups.push({ query: '', colour: '#6b7280' });
 			await this.plugin.saveSettings();
@@ -287,13 +295,13 @@ export class NeighbourhoodGraphView extends ItemView {
 		});
 	}
 
-	private renderColourGroupInline(container: HTMLElement, index: number): void {
+	private renderColourGroupRow(container: HTMLElement, index: number): void {
 		const group = this.plugin.settings.colourGroups[index];
-		const row = container.createDiv({ cls: 'neighbourhood-graph-group-row' });
+		const row = container.createDiv({ cls: 'ng-group-row' });
 
 		const queryInput = row.createEl('input', {
 			type: 'text',
-			cls: 'neighbourhood-graph-group-query',
+			cls: 'ng-group-query',
 			placeholder: 'e.g. path:people/',
 			value: group.query,
 		});
@@ -305,7 +313,7 @@ export class NeighbourhoodGraphView extends ItemView {
 
 		const colourInput = row.createEl('input', {
 			type: 'color',
-			cls: 'neighbourhood-graph-group-colour',
+			cls: 'ng-group-colour',
 			value: group.colour,
 		});
 		colourInput.addEventListener('input', async () => {
@@ -314,55 +322,12 @@ export class NeighbourhoodGraphView extends ItemView {
 			this.rebuild();
 		});
 
-		const removeBtn = row.createEl('button', { cls: 'neighbourhood-graph-group-remove', text: '\u00d7' });
+		const removeBtn = row.createEl('button', { cls: 'ng-group-remove', text: '\u00d7' });
 		removeBtn.addEventListener('click', async () => {
 			this.plugin.settings.colourGroups.splice(index, 1);
 			await this.plugin.saveSettings();
 			this.buildSettingsPanel();
 			this.rebuild();
 		});
-	}
-
-	private buildLegendPanel(): void {
-		if (!this.legendPanel) return;
-		const panel = this.legendPanel;
-		panel.empty();
-
-		panel.createEl('div', { text: 'Legend', cls: 'neighbourhood-graph-panel-heading' });
-
-		const shapes = panel.createDiv({ cls: 'neighbourhood-graph-legend-section' });
-		shapes.createEl('div', { text: 'Shapes', cls: 'neighbourhood-graph-panel-subheading' });
-
-		const shapeItems: Array<{ shape: string; label: string; desc: string }> = [
-			{ shape: 'circle-large', label: 'Focus note', desc: 'The current note (amber glow)' },
-			{ shape: 'circle', label: 'Neighbour note', desc: 'Connected via tags or links' },
-			{ shape: 'diamond', label: 'Tag', desc: 'Shared tag between notes' },
-			{ shape: 'square', label: 'Backlink target', desc: 'Linked note (no shared tags)' },
-		];
-
-		for (const item of shapeItems) {
-			const row = shapes.createDiv({ cls: 'neighbourhood-graph-legend-row' });
-			row.createDiv({ cls: `neighbourhood-graph-legend-shape ${item.shape}` });
-			const text = row.createDiv({ cls: 'neighbourhood-graph-legend-text' });
-			text.createEl('strong', { text: item.label });
-			text.createEl('span', { text: ` \u2014 ${item.desc}` });
-		}
-
-		const interactions = panel.createDiv({ cls: 'neighbourhood-graph-legend-section' });
-		interactions.createEl('div', { text: 'Interactions', cls: 'neighbourhood-graph-panel-subheading' });
-
-		const interactionItems: Array<{ action: string; result: string }> = [
-			{ action: 'Hover', result: 'Highlight connections' },
-			{ action: 'Click', result: 'Recentre graph on that note' },
-			{ action: 'Double-click', result: 'Open note in editor' },
-			{ action: 'Drag', result: 'Reposition a node' },
-			{ action: 'Scroll', result: 'Zoom in/out' },
-		];
-
-		for (const item of interactionItems) {
-			const row = interactions.createDiv({ cls: 'neighbourhood-graph-legend-row' });
-			row.createEl('kbd', { text: item.action, cls: 'neighbourhood-graph-legend-kbd' });
-			row.createEl('span', { text: item.result });
-		}
 	}
 }

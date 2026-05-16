@@ -1,12 +1,16 @@
 import * as d3 from 'd3';
 import type { GraphData, GraphNode, NeighbourhoodGraphSettings, ColourGroup } from './types';
 
-const NOTE_R = 13;
-const FOCUS_R = 18;
+const NOTE_R_MIN = 8;
+const NOTE_R_MAX = 18;
+const FOCUS_R = 20;
 const TAG_R = 6;
 const HIGHLIGHT_COLOUR = '#fbbf24';
 
-interface SimNode extends GraphNode, d3.SimulationNodeDatum {}
+interface SimNode extends GraphNode, d3.SimulationNodeDatum {
+	/** Computed display radius based on connection strength */
+	r: number;
+}
 interface SimEdge extends d3.SimulationLinkDatum<SimNode> {
 	source: SimNode | string;
 	target: SimNode | string;
@@ -34,9 +38,26 @@ function distanceFromSlider(v: number): number {
 	return 50 + (v - 1) * (150 / 9);
 }
 
-function nodeRadius(node: GraphNode): number {
-	if (node.type !== 'note') return TAG_R;
-	return node.focus ? FOCUS_R : NOTE_R;
+function nodeRadius(node: SimNode): number {
+	return node.r;
+}
+
+/** Scale note radii by connection strength. Focus gets fixed max size. */
+function computeRadii(nodes: SimNode[]): void {
+	const noteNodes = nodes.filter((n) => n.type === 'note' && !n.focus);
+	const strengths = noteNodes.map((n) => n.strength ?? 0);
+	const maxStrength = Math.max(1, ...strengths);
+
+	for (const node of nodes) {
+		if (node.type !== 'note') {
+			node.r = TAG_R;
+		} else if (node.focus) {
+			node.r = FOCUS_R;
+		} else {
+			const t = (node.strength ?? 0) / maxStrength;
+			node.r = NOTE_R_MIN + t * (NOTE_R_MAX - NOTE_R_MIN);
+		}
+	}
 }
 
 function matchesColourGroup(node: GraphNode, group: ColourGroup): boolean {
@@ -144,8 +165,9 @@ export class GraphRenderer {
 				.on('zoom', (e) => g.attr('transform', e.transform as unknown as string)) as never,
 		);
 
-		const nodes: SimNode[] = data.nodes.map((n) => ({ ...n }));
+		const nodes: SimNode[] = data.nodes.map((n) => ({ ...n, r: 0 }));
 		const edges: SimEdge[] = data.edges.map((e) => ({ ...e }));
+		computeRadii(nodes);
 
 		this.simulation = d3.forceSimulation(nodes)
 			.force('link', d3.forceLink<SimNode, SimEdge>(edges)
@@ -155,10 +177,7 @@ export class GraphRenderer {
 			.force('charge', d3.forceManyBody()
 				.strength(chargeFromSlider(this.settings.spread)))
 			.force('center', d3.forceCenter(W / 2, H / 2).strength(0.04))
-			.force('collision', d3.forceCollide<SimNode>((d) => {
-				if (d.type !== 'note') return TAG_R + 28;
-				return (d.focus ? FOCUS_R : NOTE_R) + 38;
-			}))
+			.force('collision', d3.forceCollide<SimNode>((d) => d.r + 24))
 			.force('radial', d3.forceRadial<SimNode>(
 				(d) => d.type === 'note' ? Math.min(W, H) * 0.34 : 0,
 				W / 2, H / 2,
@@ -274,17 +293,15 @@ export class GraphRenderer {
 				}
 			});
 
-		// Render node shapes
+		// Render node shapes — sized by connection strength
 		const settingsRef = this.settings;
 		node.each(function (this: SVGGElement, d: SimNode) {
 			const sel = d3.select(this);
 			if (d.type === 'note') {
-				const r = d.focus ? FOCUS_R : NOTE_R;
 				const fill = getNodeColour(d, settingsRef);
 				if (d.focus) {
-					// Glow ring behind focus node
 					sel.append('circle')
-						.attr('r', r + 4)
+						.attr('r', d.r + 4)
 						.attr('fill', 'none')
 						.attr('stroke', HIGHLIGHT_COLOUR)
 						.attr('stroke-width', 2)
@@ -292,18 +309,19 @@ export class GraphRenderer {
 						.attr('filter', 'url(#nh-focus-glow)');
 				}
 				sel.append('circle')
-					.attr('r', r)
+					.attr('r', d.r)
 					.attr('fill', fill)
 					.attr('stroke', d.focus ? HIGHLIGHT_COLOUR : '#fff')
 					.attr('stroke-width', d.focus ? 3 : 1.5);
 			} else if (d.type === 'tag') {
+				const r = d.r;
 				sel.append('polygon')
-					.attr('points', `0,${-TAG_R} ${TAG_R},0 0,${TAG_R} ${-TAG_R},0`)
+					.attr('points', `0,${-r} ${r},0 0,${r} ${-r},0`)
 					.attr('fill', getNodeColour(d, settingsRef))
 					.attr('stroke', '#fff')
 					.attr('stroke-width', 1);
 			} else {
-				const half = TAG_R;
+				const half = d.r;
 				sel.append('rect')
 					.attr('x', -half).attr('y', -half)
 					.attr('width', half * 2).attr('height', half * 2)
@@ -313,10 +331,14 @@ export class GraphRenderer {
 			}
 		});
 
-		// Node labels
+		// Node labels — font size scales with node radius for notes
 		node.append('text')
 			.attr('text-anchor', 'middle')
-			.attr('font-size', (d) => d.focus ? '12px' : '10px')
+			.attr('font-size', (d) => {
+				if (d.focus) return '12px';
+				if (d.type !== 'note') return '9px';
+				return `${Math.round(8 + (d.r - NOTE_R_MIN) / (NOTE_R_MAX - NOTE_R_MIN) * 3)}px`;
+			})
 			.attr('font-weight', (d) => d.focus ? '700' : '400')
 			.attr('fill', (d) => d.type === 'note' ? textColour : tagTextColour)
 			.attr('pointer-events', 'none')
@@ -326,10 +348,9 @@ export class GraphRenderer {
 				const mid = Math.ceil(words.length / 2);
 				const line1 = words.slice(0, mid).join(' ');
 				const line2 = words.length > 1 ? words.slice(mid).join(' ') : '';
-				const r = nodeRadius(d);
 				sel.append('tspan')
 					.attr('x', 0)
-					.attr('dy', line2 ? -(r + 16) : -(r + 4))
+					.attr('dy', line2 ? -(d.r + 16) : -(d.r + 4))
 					.text(line1);
 				if (line2) {
 					sel.append('tspan').attr('x', 0).attr('dy', 12).text(line2);
