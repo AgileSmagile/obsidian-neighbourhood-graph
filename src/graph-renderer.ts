@@ -42,11 +42,17 @@ function nodeRadius(node: SimNode): number {
 	return node.r;
 }
 
-/** Scale note radii by connection strength. Focus gets fixed max size. */
+/**
+ * Scale note radii by connection strength. Uses a log scale so the
+ * difference between 1 and 3 connections is more visible than between
+ * 10 and 12. Focus gets fixed max size.
+ */
 function computeRadii(nodes: SimNode[]): void {
 	const noteNodes = nodes.filter((n) => n.type === 'note' && !n.focus);
 	const strengths = noteNodes.map((n) => n.strength ?? 0);
-	const maxStrength = Math.max(1, ...strengths);
+	const minStr = Math.min(...strengths, 0);
+	const maxStr = Math.max(...strengths, 1);
+	const range = maxStr - minStr;
 
 	for (const node of nodes) {
 		if (node.type !== 'note') {
@@ -54,8 +60,16 @@ function computeRadii(nodes: SimNode[]): void {
 		} else if (node.focus) {
 			node.r = FOCUS_R;
 		} else {
-			const t = (node.strength ?? 0) / maxStrength;
-			node.r = NOTE_R_MIN + t * (NOTE_R_MAX - NOTE_R_MIN);
+			const s = node.strength ?? 0;
+			// When all strengths are equal, use a mid-range size
+			if (range === 0) {
+				node.r = (NOTE_R_MIN + NOTE_R_MAX) / 2;
+			} else {
+				const t = (s - minStr) / range;
+				// Log curve: small differences at low end are more visible
+				const curved = Math.sqrt(t);
+				node.r = NOTE_R_MIN + curved * (NOTE_R_MAX - NOTE_R_MIN);
+			}
 		}
 	}
 }
@@ -450,8 +464,13 @@ export class GraphRenderer {
 			this.simulation.stop();
 			this.simulation = null;
 		}
-		this.container.empty();
-		this.svg = null;
+		// Only remove elements the renderer created, not persistent overlays
+		if (this.svg) {
+			this.svg.remove();
+			this.svg = null;
+		}
+		const tooltip = this.container.querySelector('.neighbourhood-graph-tooltip');
+		if (tooltip) tooltip.remove();
 		this._link = null;
 		this._simulation = null;
 	}

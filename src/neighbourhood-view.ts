@@ -118,11 +118,7 @@ export class NeighbourhoodGraphView extends ItemView {
 
 		const data = buildNeighbourhood(this.focusFile, this.app, this.plugin.settings);
 
-		// Clear only the SVG and tooltip, preserve overlay elements
-		const svg = this.graphContainer.querySelector('svg');
-		if (svg) svg.remove();
-		const oldTooltip = this.graphContainer.querySelector('.neighbourhood-graph-tooltip');
-		if (oldTooltip) oldTooltip.remove();
+		// Remove truncation indicator from previous render
 		const oldTruncated = this.graphContainer.querySelector('.ng-truncated');
 		if (oldTruncated) oldTruncated.remove();
 
