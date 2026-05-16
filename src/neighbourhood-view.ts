@@ -53,15 +53,73 @@ export class NeighbourhoodGraphView extends ItemView {
 		this.settingsPanel = this.graphContainer.createDiv({ cls: 'ng-settings-panel ng-panel-hidden' });
 		this.buildSettingsPanel();
 
-		// Persistent mini legend at bottom
-		const legend = this.graphContainer.createDiv({ cls: 'ng-mini-legend' });
-		legend.innerHTML = [
+		// Draggable, collapsible legend — top-left
+		const legend = this.graphContainer.createDiv({ cls: 'ng-legend' });
+
+		const legendHeader = legend.createDiv({ cls: 'ng-legend-header' });
+		const chevron = legendHeader.createDiv({ cls: 'ng-legend-chevron' });
+		setIcon(chevron, 'chevron-down');
+
+		const legendBody = legend.createDiv({ cls: 'ng-legend-body' });
+		legendBody.innerHTML = [
 			'<span class="ng-legend-item"><span class="ng-shape-circle ng-shape-focus"></span> Focus</span>',
 			'<span class="ng-legend-item"><span class="ng-shape-circle"></span> Note</span>',
 			'<span class="ng-legend-item"><span class="ng-shape-diamond"></span> Tag</span>',
 			'<span class="ng-legend-item"><span class="ng-shape-square"></span> Link</span>',
-			'<span class="ng-legend-item ng-legend-hint">Click = recentre \u00b7 Double-click = open</span>',
+			'<div class="ng-legend-divider"></div>',
+			'<span class="ng-legend-item">Click = recentre</span>',
+			'<span class="ng-legend-item">Double-click = open</span>',
+			'<span class="ng-legend-item">Drag = move node</span>',
+			'<span class="ng-legend-item">Scroll = zoom</span>',
 		].join('');
+
+		// Collapse/expand
+		let legendCollapsed = false;
+		chevron.addEventListener('click', (e) => {
+			e.stopPropagation();
+			legendCollapsed = !legendCollapsed;
+			legendBody.toggleClass('ng-legend-collapsed', legendCollapsed);
+			chevron.toggleClass('ng-legend-chevron-collapsed', legendCollapsed);
+		});
+
+		// Draggable
+		let dragOffsetX = 0;
+		let dragOffsetY = 0;
+		let isDragging = false;
+
+		legendHeader.addEventListener('mousedown', (e) => {
+			if ((e.target as HTMLElement).closest('.ng-legend-chevron')) return;
+			isDragging = true;
+			const rect = legend.getBoundingClientRect();
+			const parentRect = this.graphContainer!.getBoundingClientRect();
+			dragOffsetX = e.clientX - (rect.left - parentRect.left);
+			dragOffsetY = e.clientY - (rect.top - parentRect.top);
+			legend.addClass('ng-legend-dragging');
+			e.preventDefault();
+		});
+
+		const onMouseMove = (e: MouseEvent): void => {
+			if (!isDragging || !this.graphContainer) return;
+			const parentRect = this.graphContainer.getBoundingClientRect();
+			let x = e.clientX - dragOffsetX;
+			let y = e.clientY - dragOffsetY;
+			// Clamp within container
+			const legendRect = legend.getBoundingClientRect();
+			x = Math.max(0, Math.min(x, parentRect.width - legendRect.width));
+			y = Math.max(0, Math.min(y, parentRect.height - legendRect.height));
+			legend.style.left = `${x}px`;
+			legend.style.top = `${y}px`;
+			legend.style.right = 'auto';
+			legend.style.bottom = 'auto';
+		};
+
+		const onMouseUp = (): void => {
+			isDragging = false;
+			legend.removeClass('ng-legend-dragging');
+		};
+
+		this.graphContainer.addEventListener('mousemove', onMouseMove);
+		this.graphContainer.addEventListener('mouseup', onMouseUp);
 
 		// Listen for navigation
 		this.registerEvent(
