@@ -57,6 +57,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		const legend = this.graphContainer.createDiv({ cls: 'ng-legend' });
 
 		const legendHeader = legend.createDiv({ cls: 'ng-legend-header' });
+		legendHeader.createSpan({ text: 'Key', cls: 'ng-legend-title' });
 		const chevron = legendHeader.createDiv({ cls: 'ng-legend-chevron' });
 		setIcon(chevron, 'chevron-down');
 
@@ -67,10 +68,8 @@ export class NeighbourhoodGraphView extends ItemView {
 			'<span class="ng-legend-item"><span class="ng-shape-diamond"></span> Tag</span>',
 			'<span class="ng-legend-item"><span class="ng-shape-square"></span> Link</span>',
 			'<div class="ng-legend-divider"></div>',
-			'<span class="ng-legend-item">Click = recentre</span>',
+			'<span class="ng-legend-item">Click = centre on</span>',
 			'<span class="ng-legend-item">Double-click = open</span>',
-			'<span class="ng-legend-item">Drag = move node</span>',
-			'<span class="ng-legend-item">Scroll = zoom</span>',
 		].join('');
 
 		// Collapse/expand

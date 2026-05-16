@@ -199,10 +199,19 @@
 .ng-legend-header {
 	display: flex;
 	align-items: center;
-	justify-content: flex-end;
+	justify-content: space-between;
 	padding: 3px 5px;
 	cursor: grab;
 	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ng-legend-title {
+	font-size: 10px;
+	font-weight: var(--font-semibold);
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding-left: 2px;
 }
 
 .ng-legend-chevron {

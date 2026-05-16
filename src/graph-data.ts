@@ -47,7 +47,13 @@ export function buildNeighbourhood(
 		}
 	}
 
-	// Score each potential neighbour by connection strength
+	// Score each potential neighbour by connection strength.
+	// Strength components:
+	//   - Each shared tag: +1
+	//   - Outlink from focus: +2
+	//   - Inlink to focus (backlink): +2
+	//   - Bidirectional link (both directions): +2 bonus
+	//   - Neighbour's own link count (hub score): +log2(links)
 	const neighbourStrength = new Map<string, number>();
 
 	// Tag neighbours: notes sharing at least one tag
@@ -64,9 +70,29 @@ export function buildNeighbourhood(
 		}
 	}
 
-	// Backlink neighbours: notes linked to/from focus
-	for (const linkedPath of focusAllLinks) {
+	// Link neighbours with directionality bonus
+	for (const linkedPath of focusOutLinks) {
 		neighbourStrength.set(linkedPath, (neighbourStrength.get(linkedPath) ?? 0) + 2);
+	}
+	for (const linkedPath of focusInLinks) {
+		neighbourStrength.set(linkedPath, (neighbourStrength.get(linkedPath) ?? 0) + 2);
+	}
+	// Bidirectional bonus
+	for (const linkedPath of focusOutLinks) {
+		if (focusInLinks.has(linkedPath)) {
+			neighbourStrength.set(linkedPath, (neighbourStrength.get(linkedPath) ?? 0) + 2);
+		}
+	}
+
+	// Hub score: neighbours that are themselves well-connected rank higher
+	for (const [notePath] of neighbourStrength) {
+		const file = vault.getFileByPath(notePath);
+		if (!file) continue;
+		const outCount = Object.keys(app.metadataCache.resolvedLinks[notePath] ?? {}).length;
+		const inCount = Object.values(app.metadataCache.resolvedLinks)
+			.filter((targets) => targets[notePath]).length;
+		const hubScore = Math.log2(Math.max(1, outCount + inCount));
+		neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + hubScore);
 	}
 
 	// Sort by strength (highest first) and cap
