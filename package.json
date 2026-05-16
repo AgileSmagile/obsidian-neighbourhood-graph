@@ -9,7 +9,6 @@
     "lint": "eslint src/ --ext .ts"
   },
   "devDependencies": {
-    "@obsidian-plugins/eslint-plugin": "latest",
     "@types/d3": "^7.4.0",
     "@types/node": "^16.11.6",
     "esbuild": "0.17.3",
