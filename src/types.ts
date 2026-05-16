@@ -4,7 +4,8 @@ export interface GraphNode {
 	label: string;
 	path?: string;
 	focus?: boolean;
-	hopLevel?: number;
+	/** Number of shared connections with the focus note (tags + links) */
+	strength?: number;
 }
 
 export interface GraphEdge {
@@ -24,6 +25,7 @@ export interface ColourGroup {
 }
 
 export interface NeighbourhoodGraphSettings {
+	/** Controls hover highlight depth: 1 = direct only, 2 = direct + secondary */
 	depth: 1 | 2;
 	maxNeighbours: number;
 	colourGroups: ColourGroup[];
@@ -38,8 +40,8 @@ export interface NeighbourhoodGraphSettings {
 }
 
 export const DEFAULT_SETTINGS: NeighbourhoodGraphSettings = {
-	depth: 1,
-	maxNeighbours: 100,
+	depth: 2,
+	maxNeighbours: 30,
 	colourGroups: [],
 	defaultNodeColour: '#6b7280',
 	tagConceptColour: '#d4a017',

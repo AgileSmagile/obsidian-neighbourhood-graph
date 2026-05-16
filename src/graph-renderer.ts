@@ -1,8 +1,8 @@
 import * as d3 from 'd3';
-import type { GraphData, GraphNode, GraphEdge, NeighbourhoodGraphSettings, ColourGroup } from './types';
+import type { GraphData, GraphNode, NeighbourhoodGraphSettings, ColourGroup } from './types';
 
 const NOTE_R = 13;
-const FOCUS_R = 15;
+const FOCUS_R = 18;
 const TAG_R = 6;
 const HIGHLIGHT_COLOUR = '#fbbf24';
 
@@ -62,12 +62,22 @@ function getNodeColour(node: GraphNode, settings: NeighbourhoodGraphSettings): s
 	return settings.defaultNodeColour;
 }
 
+function getEdgeNodeId(node: SimNode | string): string {
+	return typeof node === 'string' ? node : node.id;
+}
+
 export class GraphRenderer {
 	private container: HTMLElement;
 	private settings: NeighbourhoodGraphSettings;
 	private callbacks: RendererCallbacks;
 	private simulation: d3.Simulation<SimNode, SimEdge> | null = null;
 	private svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | null = null;
+	private _link: d3.Selection<SVGLineElement, SimEdge, SVGGElement, unknown> | null = null;
+	private _simulation: d3.Simulation<SimNode, SimEdge> | null = null;
+	private _currentLineColour: () => string = () => '';
+	private _currentLineWidth: () => number = () => 1;
+	private _setLineColour: (v: string) => void = () => {};
+	private _setLineWidth: (v: number) => void = () => {};
 
 	constructor(
 		container: HTMLElement,
@@ -114,6 +124,19 @@ export class GraphRenderer {
 		merge.append('feMergeNode').attr('in', 'blur');
 		merge.append('feMergeNode').attr('in', 'SourceGraphic');
 
+		// Focus node glow filter
+		const focusGlow = defs.append('filter')
+			.attr('id', 'nh-focus-glow')
+			.attr('x', '-100%').attr('y', '-100%')
+			.attr('width', '300%').attr('height', '300%');
+		focusGlow.append('feGaussianBlur')
+			.attr('in', 'SourceGraphic')
+			.attr('stdDeviation', '4')
+			.attr('result', 'blur');
+		const focusMerge = focusGlow.append('feMerge');
+		focusMerge.append('feMergeNode').attr('in', 'blur');
+		focusMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
 		const g = this.svg.append('g');
 		this.svg.call(
 			d3.zoom<SVGSVGElement, unknown>()
@@ -123,9 +146,6 @@ export class GraphRenderer {
 
 		const nodes: SimNode[] = data.nodes.map((n) => ({ ...n }));
 		const edges: SimEdge[] = data.edges.map((e) => ({ ...e }));
-
-		const focusNode = nodes.find((n) => n.focus);
-		const focusId = focusNode?.id ?? '';
 
 		this.simulation = d3.forceSimulation(nodes)
 			.force('link', d3.forceLink<SimNode, SimEdge>(edges)
@@ -152,32 +172,38 @@ export class GraphRenderer {
 			.attr('stroke-width', initLineWidth)
 			.attr('stroke-opacity', 0.9);
 
+		const depth = this.settings.depth;
+
 		const highlightNode = (d: SimNode): void => {
 			const directIds = new Set<string>(
 				edges.flatMap((edge) => {
-					const srcId = typeof edge.source === 'string' ? edge.source : (edge.source as SimNode).id;
-					const tgtId = typeof edge.target === 'string' ? edge.target : (edge.target as SimNode).id;
+					const srcId = getEdgeNodeId(edge.source);
+					const tgtId = getEdgeNodeId(edge.target);
 					return srcId === d.id || tgtId === d.id ? [srcId, tgtId] : [];
 				}),
 			);
 			directIds.delete(d.id);
 
 			const secondaryIds = new Set<string>();
-			edges.forEach((edge) => {
-				const srcId = typeof edge.source === 'string' ? edge.source : (edge.source as SimNode).id;
-				const tgtId = typeof edge.target === 'string' ? edge.target : (edge.target as SimNode).id;
-				if (directIds.has(srcId) && tgtId !== d.id) secondaryIds.add(tgtId);
-				if (directIds.has(tgtId) && srcId !== d.id) secondaryIds.add(srcId);
-			});
-			directIds.forEach((id) => secondaryIds.delete(id));
+			if (depth === 2) {
+				edges.forEach((edge) => {
+					const srcId = getEdgeNodeId(edge.source);
+					const tgtId = getEdgeNodeId(edge.target);
+					if (directIds.has(srcId) && tgtId !== d.id) secondaryIds.add(tgtId);
+					if (directIds.has(tgtId) && srcId !== d.id) secondaryIds.add(srcId);
+				});
+				directIds.forEach((id) => secondaryIds.delete(id));
+			}
 
 			const edgeLinkType = (e: SimEdge): 'primary' | 'secondary' | 'none' => {
-				const srcId = typeof e.source === 'string' ? e.source : (e.source as SimNode).id;
-				const tgtId = typeof e.target === 'string' ? e.target : (e.target as SimNode).id;
+				const srcId = getEdgeNodeId(e.source);
+				const tgtId = getEdgeNodeId(e.target);
 				if (srcId === d.id || tgtId === d.id) return 'primary';
-				const srcDirect = directIds.has(srcId);
-				const tgtDirect = directIds.has(tgtId);
-				if ((srcDirect && secondaryIds.has(tgtId)) || (tgtDirect && secondaryIds.has(srcId))) return 'secondary';
+				if (depth === 2) {
+					const srcDirect = directIds.has(srcId);
+					const tgtDirect = directIds.has(tgtId);
+					if ((srcDirect && secondaryIds.has(tgtId)) || (tgtDirect && secondaryIds.has(srcId))) return 'secondary';
+				}
 				return 'none';
 			};
 
@@ -196,7 +222,7 @@ export class GraphRenderer {
 
 			node.attr('opacity', (n) => {
 				if (n.id === d.id || directIds.has(n.id)) return 1;
-				if (secondaryIds.has(n.id)) return 0.6;
+				if (depth === 2 && secondaryIds.has(n.id)) return 0.6;
 				return 0.25;
 			});
 		};
@@ -249,12 +275,22 @@ export class GraphRenderer {
 			});
 
 		// Render node shapes
-		node.each(function (d: SimNode) {
+		const settingsRef = this.settings;
+		node.each(function (this: SVGGElement, d: SimNode) {
 			const sel = d3.select(this);
-			const settings_ref = (sel.node() as SVGGElement).ownerDocument.defaultView;
 			if (d.type === 'note') {
 				const r = d.focus ? FOCUS_R : NOTE_R;
-				const fill = getNodeColour(d, this.__settings);
+				const fill = getNodeColour(d, settingsRef);
+				if (d.focus) {
+					// Glow ring behind focus node
+					sel.append('circle')
+						.attr('r', r + 4)
+						.attr('fill', 'none')
+						.attr('stroke', HIGHLIGHT_COLOUR)
+						.attr('stroke-width', 2)
+						.attr('stroke-opacity', 0.4)
+						.attr('filter', 'url(#nh-focus-glow)');
+				}
 				sel.append('circle')
 					.attr('r', r)
 					.attr('fill', fill)
@@ -263,26 +299,25 @@ export class GraphRenderer {
 			} else if (d.type === 'tag') {
 				sel.append('polygon')
 					.attr('points', `0,${-TAG_R} ${TAG_R},0 0,${TAG_R} ${-TAG_R},0`)
-					.attr('fill', getNodeColour(d, this.__settings))
+					.attr('fill', getNodeColour(d, settingsRef))
 					.attr('stroke', '#fff')
 					.attr('stroke-width', 1);
 			} else {
-				// backlink — square
 				const half = TAG_R;
 				sel.append('rect')
 					.attr('x', -half).attr('y', -half)
 					.attr('width', half * 2).attr('height', half * 2)
-					.attr('fill', getNodeColour(d, this.__settings))
+					.attr('fill', getNodeColour(d, settingsRef))
 					.attr('stroke', '#fff')
 					.attr('stroke-width', 1);
 			}
-		}.bind({ __settings: this.settings }));
+		});
 
 		// Node labels
 		node.append('text')
 			.attr('text-anchor', 'middle')
-			.attr('font-size', (d) => d.focus ? '11px' : '10px')
-			.attr('font-weight', (d) => d.focus ? '600' : '400')
+			.attr('font-size', (d) => d.focus ? '12px' : '10px')
+			.attr('font-weight', (d) => d.focus ? '700' : '400')
 			.attr('fill', (d) => d.type === 'note' ? textColour : tagTextColour)
 			.attr('pointer-events', 'none')
 			.each(function (d: SimNode) {
@@ -399,12 +434,4 @@ export class GraphRenderer {
 		this._link = null;
 		this._simulation = null;
 	}
-
-	// Internal references for slider updates
-	private _link: d3.Selection<SVGLineElement, SimEdge, SVGGElement, unknown> | null = null;
-	private _simulation: d3.Simulation<SimNode, SimEdge> | null = null;
-	private _currentLineColour: () => string = () => '';
-	private _currentLineWidth: () => number = () => 1;
-	private _setLineColour: (v: string) => void = () => {};
-	private _setLineWidth: (v: number) => void = () => {};
 }

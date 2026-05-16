@@ -1,5 +1,6 @@
 import esbuild from "esbuild";
 import { resolve } from "path";
+import { copyFileSync } from "fs";
 
 const prod = process.argv[2] === "production";
 
@@ -34,5 +35,8 @@ if (prod) {
   await ctx.rebuild();
   process.exit(0);
 } else {
+  // Copy manifest and styles to vault plugin dir for Obsidian to detect
+  copyFileSync(resolve("manifest.json"), `${outDir}/manifest.json`);
+  copyFileSync(resolve("styles.css"), `${outDir}/styles.css`);
   await ctx.watch();
 }

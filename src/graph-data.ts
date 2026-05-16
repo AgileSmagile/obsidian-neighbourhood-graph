@@ -4,19 +4,17 @@ import type { GraphData, GraphNode, GraphEdge, NeighbourhoodGraphSettings } from
 /**
  * Build a neighbourhood subgraph centred on the focus file.
  *
- * Connections come from two sources:
- * 1. Tags: notes sharing at least one tag with the focus note
- * 2. Backlinks: notes linked to/from the focus note via wikilinks
+ * Always shows direct neighbours only (1-hop data). The depth setting
+ * controls visual highlight tiers on hover, not which nodes appear.
  *
- * Depth 1: focus + direct neighbours + shared concepts
- * Depth 2: adds neighbours-of-neighbours and their connecting concepts
+ * Neighbours are ranked by connection strength (shared tags + direct links)
+ * and capped at maxNeighbours.
  */
 export function buildNeighbourhood(
 	focusFile: TFile,
 	app: App,
 	settings: NeighbourhoodGraphSettings,
 ): GraphData {
-	const cache = app.metadataCache;
 	const vault = app.vault;
 	const allFiles = vault.getMarkdownFiles();
 
@@ -36,13 +34,10 @@ export function buildNeighbourhood(
 		label: focusFile.basename,
 		path: focusFile.parent?.path ?? '',
 		focus: true,
-		hopLevel: 0,
+		strength: 0,
 	});
 
-	// Find hop-1 neighbours
-	const hop1Neighbours = new Set<string>();
-
-	// Tag neighbours: notes sharing at least one tag
+	// Build tag → notes index
 	const tagToNotes = new Map<string, Set<string>>();
 	for (const file of allFiles) {
 		const tags = getFileTags(file, app);
@@ -52,6 +47,10 @@ export function buildNeighbourhood(
 		}
 	}
 
+	// Score each potential neighbour by connection strength
+	const neighbourStrength = new Map<string, number>();
+
+	// Tag neighbours: notes sharing at least one tag
 	const focusSharedTags = new Set<string>();
 	for (const tag of focusTags) {
 		const notesWithTag = tagToNotes.get(tag);
@@ -59,7 +58,7 @@ export function buildNeighbourhood(
 			focusSharedTags.add(tag);
 			for (const notePath of notesWithTag) {
 				if (notePath !== focusFile.path) {
-					hop1Neighbours.add(notePath);
+					neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + 1);
 				}
 			}
 		}
@@ -67,16 +66,18 @@ export function buildNeighbourhood(
 
 	// Backlink neighbours: notes linked to/from focus
 	for (const linkedPath of focusAllLinks) {
-		hop1Neighbours.add(linkedPath);
+		neighbourStrength.set(linkedPath, (neighbourStrength.get(linkedPath) ?? 0) + 2);
 	}
 
-	// Cap neighbours at maxNeighbours
-	const hop1Array = [...hop1Neighbours].slice(0, settings.maxNeighbours);
-	const hop1Set = new Set(hop1Array);
-	const truncated = Math.max(0, hop1Neighbours.size - settings.maxNeighbours);
+	// Sort by strength (highest first) and cap
+	const sorted = [...neighbourStrength.entries()]
+		.sort((a, b) => b[1] - a[1]);
+	const capped = sorted.slice(0, settings.maxNeighbours);
+	const truncated = Math.max(0, sorted.length - settings.maxNeighbours);
+	const neighbourSet = new Set(capped.map(([path]) => path));
 
-	// Add hop-1 note nodes
-	for (const notePath of hop1Set) {
+	// Add neighbour note nodes
+	for (const [notePath, strength] of capped) {
 		const file = vault.getFileByPath(notePath);
 		if (!file) continue;
 		nodeMap.set(notePath, {
@@ -84,118 +85,46 @@ export function buildNeighbourhood(
 			type: 'note',
 			label: file.basename,
 			path: file.parent?.path ?? '',
-			hopLevel: 1,
+			strength,
 		});
 	}
 
-	// Add tag concept nodes and edges for hop-1
+	// Add tag concept nodes and edges
 	for (const tag of focusSharedTags) {
 		const tagId = `tag:${tag}`;
-		if (!nodeMap.has(tagId)) {
-			nodeMap.set(tagId, {
-				id: tagId,
-				type: 'tag',
-				label: tag,
-				hopLevel: 1,
-			});
+		const notesWithTag = tagToNotes.get(tag)!;
+
+		// Only add tag if at least one neighbour in the capped set has it
+		let hasNeighbour = false;
+		for (const notePath of neighbourSet) {
+			if (notesWithTag.has(notePath)) {
+				hasNeighbour = true;
+				break;
+			}
 		}
+		if (!hasNeighbour) continue;
+
+		nodeMap.set(tagId, {
+			id: tagId,
+			type: 'tag',
+			label: tag,
+		});
+
 		// Edge: focus → tag
 		addEdge(focusFile.path, tagId);
 
-		// Edges: neighbour → tag (only if neighbour has this tag)
-		const notesWithTag = tagToNotes.get(tag)!;
-		for (const notePath of hop1Set) {
+		// Edges: neighbour → tag
+		for (const notePath of neighbourSet) {
 			if (notesWithTag.has(notePath)) {
 				addEdge(notePath, tagId);
 			}
 		}
 	}
 
-	// Add backlink concept nodes and edges for hop-1
+	// Add direct link edges between focus and backlink neighbours
 	for (const linkedPath of focusAllLinks) {
-		if (!hop1Set.has(linkedPath)) continue;
-		// Direct link edge between focus and neighbour
-		addEdge(focusFile.path, linkedPath);
-	}
-
-	// Depth 2: neighbours of neighbours
-	if (settings.depth === 2) {
-		const hop2Neighbours = new Set<string>();
-
-		for (const hop1Path of hop1Set) {
-			const hop1File = vault.getFileByPath(hop1Path);
-			if (!hop1File) continue;
-
-			const hop1Tags = getFileTags(hop1File, app);
-			const hop1OutLinks = getOutLinks(hop1File, app);
-			const hop1InLinks = getInLinks(hop1File, app);
-			const hop1AllLinks = new Set([...hop1OutLinks, ...hop1InLinks]);
-
-			// Tag connections from hop-1 neighbours
-			for (const tag of hop1Tags) {
-				const notesWithTag = tagToNotes.get(tag);
-				if (!notesWithTag) continue;
-				for (const notePath of notesWithTag) {
-					if (notePath !== hop1Path && !nodeMap.has(notePath)) {
-						hop2Neighbours.add(notePath);
-					}
-				}
-				// Add tag concept if shared between hop-1 nodes
-				const tagId = `tag:${tag}`;
-				if (!nodeMap.has(tagId) && notesWithTag.size > 1) {
-					nodeMap.set(tagId, {
-						id: tagId,
-						type: 'tag',
-						label: tag,
-						hopLevel: 2,
-					});
-				}
-				if (nodeMap.has(tagId)) {
-					addEdge(hop1Path, tagId);
-				}
-			}
-
-			// Backlink connections from hop-1 neighbours
-			for (const linkedPath of hop1AllLinks) {
-				if (!nodeMap.has(linkedPath)) {
-					hop2Neighbours.add(linkedPath);
-				}
-				if (hop1Set.has(linkedPath) || linkedPath === focusFile.path) {
-					addEdge(hop1Path, linkedPath);
-				}
-			}
-		}
-
-		// Cap hop-2 neighbours
-		const remainingCap = Math.max(0, settings.maxNeighbours - hop1Set.size);
-		const hop2Array = [...hop2Neighbours].slice(0, remainingCap);
-
-		for (const notePath of hop2Array) {
-			const file = vault.getFileByPath(notePath);
-			if (!file) continue;
-			nodeMap.set(notePath, {
-				id: notePath,
-				type: 'note',
-				label: file.basename,
-				path: file.parent?.path ?? '',
-				hopLevel: 2,
-			});
-
-			// Add edges from hop-2 to their connecting hop-1 neighbours
-			const hop2Tags = getFileTags(file, app);
-			for (const tag of hop2Tags) {
-				const tagId = `tag:${tag}`;
-				if (nodeMap.has(tagId)) {
-					addEdge(notePath, tagId);
-				}
-			}
-
-			const hop2Links = new Set([...getOutLinks(file, app), ...getInLinks(file, app)]);
-			for (const linkedPath of hop2Links) {
-				if (hop1Set.has(linkedPath)) {
-					addEdge(notePath, linkedPath);
-				}
-			}
+		if (neighbourSet.has(linkedPath)) {
+			addEdge(focusFile.path, linkedPath);
 		}
 	}
 
@@ -206,8 +135,8 @@ export function buildNeighbourhood(
 	};
 
 	function addEdge(source: string, target: string): void {
-		const key = `${source}→${target}`;
-		const reverseKey = `${target}→${source}`;
+		const key = `${source}\u2192${target}`;
+		const reverseKey = `${target}\u2192${source}`;
 		if (edgeSet.has(key) || edgeSet.has(reverseKey)) return;
 		edgeSet.add(key);
 		edges.push({ source, target });
@@ -219,14 +148,12 @@ function getFileTags(file: TFile, app: App): Set<string> {
 	const tags = new Set<string>();
 	if (!cache) return tags;
 
-	// Inline tags
 	if (cache.tags) {
 		for (const t of cache.tags) {
 			tags.add(t.tag.toLowerCase());
 		}
 	}
 
-	// Frontmatter tags
 	if (cache.frontmatter?.tags) {
 		const fmTags = cache.frontmatter.tags;
 		const tagArray = Array.isArray(fmTags) ? fmTags : [fmTags];
