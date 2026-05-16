@@ -72,31 +72,6 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		// --- Colours ---
-		containerEl.createEl('h3', { text: 'Colours' });
-
-		new Setting(containerEl)
-			.setName('Default node colour')
-			.setDesc('Base colour for notes that do not match any colour group')
-			.addColorPicker((picker) =>
-				picker.setValue(this.plugin.settings.defaultNodeColour)
-					.onChange(async (val) => {
-						this.plugin.settings.defaultNodeColour = val;
-						await this.plugin.saveSettings();
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName('Tag concept colour')
-			.setDesc('Diamond-shaped nodes representing shared tags')
-			.addColorPicker((picker) =>
-				picker.setValue(this.plugin.settings.tagConceptColour)
-					.onChange(async (val) => {
-						this.plugin.settings.tagConceptColour = val;
-						await this.plugin.saveSettings();
-					}),
-			);
-
 		// --- Colour groups ---
 		containerEl.createEl('h3', { text: 'Colour groups' });
 

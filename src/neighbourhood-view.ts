@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Setting, type TFile, debounce, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Setting, Notice, type TFile, debounce, setIcon } from 'obsidian';
 import type NeighbourhoodGraphPlugin from './main';
 import { buildNeighbourhood } from './graph-data';
 import { GraphRenderer } from './graph-renderer';
@@ -131,6 +131,16 @@ export class NeighbourhoodGraphView extends ItemView {
 			this.app.metadataCache.on('resolved', debounce(() => {
 				if (this.focusFile) this.rebuild();
 			}, 500, true)),
+		);
+
+		// Rebuild when view becomes visible again (e.g. after returning from settings)
+		this.registerEvent(
+			this.app.workspace.on('layout-change', debounce(() => {
+				if (this.focusFile && this.leaf.view === this) {
+					this.rebuild();
+					this.buildSettingsPanel();
+				}
+			}, 300, true)),
 		);
 
 		// Initial render
@@ -293,84 +303,60 @@ export class NeighbourhoodGraphView extends ItemView {
 			});
 		}
 
-		// Colours
-		panel.createEl('div', { text: 'Colours', cls: 'ng-section-label' });
-
-		new Setting(panel)
-			.setName('Default node')
-			.addColorPicker((picker) =>
-				picker.setValue(this.plugin.settings.defaultNodeColour)
-					.onChange(async (val) => {
-						this.plugin.settings.defaultNodeColour = val;
-						await this.plugin.saveSettings();
-						this.rebuild();
-					}),
-			);
-
-		new Setting(panel)
-			.setName('Tag concept')
-			.addColorPicker((picker) =>
-				picker.setValue(this.plugin.settings.tagConceptColour)
-					.onChange(async (val) => {
-						this.plugin.settings.tagConceptColour = val;
-						await this.plugin.saveSettings();
-						this.rebuild();
-					}),
-			);
-
-		// Colour groups
+		// Colour groups — import button + link to settings
 		panel.createEl('div', { text: 'Colour groups', cls: 'ng-section-label' });
-		panel.createEl('p', {
-			text: '"path:folder/", "tag:#name", or text. First match wins.',
-			cls: 'ng-panel-hint',
-		});
 
-		const groupsContainer = panel.createDiv();
-		for (let i = 0; i < this.plugin.settings.colourGroups.length; i++) {
-			this.renderColourGroupRow(groupsContainer, i);
+		const groupCount = this.plugin.settings.colourGroups.length;
+		if (groupCount > 0) {
+			panel.createEl('p', {
+				text: `${groupCount} group${groupCount === 1 ? '' : 's'} configured. Edit in plugin settings.`,
+				cls: 'ng-panel-hint',
+			});
+		} else {
+			panel.createEl('p', {
+				text: 'No colour groups set. Import or configure in plugin settings.',
+				cls: 'ng-panel-hint',
+			});
 		}
 
-		const addBtn = panel.createEl('button', { text: '+ Add group', cls: 'ng-add-group-btn' });
-		addBtn.addEventListener('click', async () => {
-			this.plugin.settings.colourGroups.push({ query: '', colour: '#6b7280' });
-			await this.plugin.saveSettings();
-			this.buildSettingsPanel();
+		const btnRow = panel.createDiv({ cls: 'ng-btn-row' });
+
+		const importBtn = btnRow.createEl('button', { text: 'Import from graph view', cls: 'ng-import-btn' });
+		importBtn.addEventListener('click', async () => {
+			await this.importColourGroups();
+		});
+
+		const settingsBtn = btnRow.createEl('button', { text: 'Open settings', cls: 'ng-import-btn' });
+		settingsBtn.addEventListener('click', () => {
+			(this.app as any).setting.open();
+			(this.app as any).setting.openTabById('neighbourhood-graph');
 		});
 	}
 
-	private renderColourGroupRow(container: HTMLElement, index: number): void {
-		const group = this.plugin.settings.colourGroups[index];
-		const row = container.createDiv({ cls: 'ng-group-row' });
-
-		const queryInput = row.createEl('input', {
-			type: 'text',
-			cls: 'ng-group-query',
-			placeholder: 'e.g. path:people/',
-			value: group.query,
-		});
-		queryInput.addEventListener('change', async () => {
-			this.plugin.settings.colourGroups[index].query = queryInput.value;
-			await this.plugin.saveSettings();
-			this.rebuild();
-		});
-
-		const colourInput = row.createEl('input', {
-			type: 'color',
-			cls: 'ng-group-colour',
-			value: group.colour,
-		});
-		colourInput.addEventListener('input', async () => {
-			this.plugin.settings.colourGroups[index].colour = colourInput.value;
-			await this.plugin.saveSettings();
-			this.rebuild();
-		});
-
-		const removeBtn = row.createEl('button', { cls: 'ng-group-remove', text: '\u00d7' });
-		removeBtn.addEventListener('click', async () => {
-			this.plugin.settings.colourGroups.splice(index, 1);
+	private async importColourGroups(): Promise<void> {
+		try {
+			const configPath = `${this.app.vault.configDir}/graph.json`;
+			const exists = await this.app.vault.adapter.exists(configPath);
+			if (!exists) {
+				new Notice('No graph.json found. Open Obsidian\'s graph view and configure colour groups first.');
+				return;
+			}
+			const raw = await this.app.vault.adapter.read(configPath);
+			const config = JSON.parse(raw);
+			if (!config.colorGroups || config.colorGroups.length === 0) {
+				new Notice('No colour groups found in Obsidian\'s graph view settings.');
+				return;
+			}
+			this.plugin.settings.colourGroups = config.colorGroups.map((g: { query: string; color: { rgb: number } }) => ({
+				query: g.query.trim(),
+				colour: `#${g.color.rgb.toString(16).padStart(6, '0')}`,
+			}));
 			await this.plugin.saveSettings();
 			this.buildSettingsPanel();
 			this.rebuild();
-		});
+			new Notice(`Imported ${this.plugin.settings.colourGroups.length} colour groups from graph view.`);
+		} catch {
+			new Notice('Failed to read graph view settings.');
+		}
 	}
 }

@@ -176,6 +176,16 @@
 	margin-top: 4px;
 }
 
+.ng-btn-row {
+	display: flex;
+	gap: 6px;
+	margin-top: 4px;
+}
+
+.ng-import-btn {
+	font-size: 11px;
+}
+
 /* Draggable legend overlay — top-left */
 .ng-legend {
 	position: absolute;
