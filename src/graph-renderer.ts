@@ -89,7 +89,6 @@ function matchesColourGroup(node: GraphNode, group: ColourGroup): boolean {
 
 function getNodeColour(node: GraphNode, settings: NeighbourhoodGraphSettings): string {
 	if (node.type === 'tag') return settings.tagConceptColour;
-	if (node.type === 'backlink') return settings.backlinkConceptColour;
 
 	for (const group of settings.colourGroups) {
 		if (matchesColourGroup(node, group)) return group.colour;
@@ -327,18 +326,11 @@ export class GraphRenderer {
 					.attr('fill', fill)
 					.attr('stroke', d.focus ? HIGHLIGHT_COLOUR : '#fff')
 					.attr('stroke-width', d.focus ? 3 : 1.5);
-			} else if (d.type === 'tag') {
+			} else {
+				// Tag — diamond
 				const r = d.r;
 				sel.append('polygon')
 					.attr('points', `0,${-r} ${r},0 0,${r} ${-r},0`)
-					.attr('fill', getNodeColour(d, settingsRef))
-					.attr('stroke', '#fff')
-					.attr('stroke-width', 1);
-			} else {
-				const half = d.r;
-				sel.append('rect')
-					.attr('x', -half).attr('y', -half)
-					.attr('width', half * 2).attr('height', half * 2)
 					.attr('fill', getNodeColour(d, settingsRef))
 					.attr('stroke', '#fff')
 					.attr('stroke-width', 1);
@@ -388,9 +380,7 @@ export class GraphRenderer {
 				if (d.type === 'note' && showPath && d.path) {
 					html += `<br/><span class="neighbourhood-graph-tooltip-sub">${d.path}</span>`;
 				} else if (d.type === 'tag') {
-					html += `<br/><span class="neighbourhood-graph-tooltip-sub">tag</span>`;
-				} else if (d.type === 'backlink') {
-					html += `<br/><span class="neighbourhood-graph-tooltip-sub">backlink target</span>`;
+					html += `<br/><span class="neighbourhood-graph-tooltip-sub">shared tag</span>`;
 				}
 				tooltip.style('opacity', '1').html(html);
 			})

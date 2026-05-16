@@ -297,12 +297,6 @@
 	transform: rotate(45deg);
 }
 
-.ng-shape-square {
-	display: inline-block;
-	width: 7px;
-	height: 7px;
-	background: #60a5fa;
-}
 
 /* Tooltip */
 .neighbourhood-graph-tooltip {

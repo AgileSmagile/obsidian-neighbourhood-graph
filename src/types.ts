@@ -1,10 +1,10 @@
 export interface GraphNode {
 	id: string;
-	type: 'note' | 'tag' | 'backlink';
+	type: 'note' | 'tag';
 	label: string;
 	path?: string;
 	focus?: boolean;
-	/** Number of shared connections with the focus note (tags + links) */
+	/** Connection strength to the focus note (tags + links + hub score) */
 	strength?: number;
 }
 
@@ -31,7 +31,6 @@ export interface NeighbourhoodGraphSettings {
 	colourGroups: ColourGroup[];
 	defaultNodeColour: string;
 	tagConceptColour: string;
-	backlinkConceptColour: string;
 	lineColour: number;
 	lineThickness: number;
 	spread: number;
@@ -45,7 +44,6 @@ export const DEFAULT_SETTINGS: NeighbourhoodGraphSettings = {
 	colourGroups: [],
 	defaultNodeColour: '#6b7280',
 	tagConceptColour: '#d4a017',
-	backlinkConceptColour: '#60a5fa',
 	lineColour: 75,
 	lineThickness: 1,
 	spread: 5,

@@ -63,10 +63,9 @@ export class NeighbourhoodGraphView extends ItemView {
 
 		const legendBody = legend.createDiv({ cls: 'ng-legend-body' });
 		legendBody.innerHTML = [
-			'<span class="ng-legend-item"><span class="ng-shape-circle ng-shape-focus"></span> Focus</span>',
-			'<span class="ng-legend-item"><span class="ng-shape-circle"></span> Note</span>',
-			'<span class="ng-legend-item"><span class="ng-shape-diamond"></span> Tag</span>',
-			'<span class="ng-legend-item"><span class="ng-shape-square"></span> Link</span>',
+			'<span class="ng-legend-item"><span class="ng-shape-circle ng-shape-focus"></span> Focus note</span>',
+			'<span class="ng-legend-item"><span class="ng-shape-circle"></span> Neighbour (size = relevance)</span>',
+			'<span class="ng-legend-item"><span class="ng-shape-diamond"></span> Shared tag</span>',
 			'<div class="ng-legend-divider"></div>',
 			'<span class="ng-legend-item">Click = centre on</span>',
 			'<span class="ng-legend-item">Double-click = open</span>',
@@ -215,6 +214,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		// Depth
 		new Setting(panel)
 			.setName('Highlight depth')
+			.setDesc('Hover highlight tiers')
 			.addDropdown((drop) =>
 				drop
 					.addOption('1', '1 hop')
@@ -230,6 +230,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		// Max neighbours
 		new Setting(panel)
 			.setName('Max neighbours')
+			.setDesc('Most connected shown first')
 			.addText((text) => {
 				text.inputEl.type = 'number';
 				text.inputEl.style.width = '60px';
@@ -312,17 +313,6 @@ export class NeighbourhoodGraphView extends ItemView {
 				picker.setValue(this.plugin.settings.tagConceptColour)
 					.onChange(async (val) => {
 						this.plugin.settings.tagConceptColour = val;
-						await this.plugin.saveSettings();
-						this.rebuild();
-					}),
-			);
-
-		new Setting(panel)
-			.setName('Backlink concept')
-			.addColorPicker((picker) =>
-				picker.setValue(this.plugin.settings.backlinkConceptColour)
-					.onChange(async (val) => {
-						this.plugin.settings.backlinkConceptColour = val;
 						await this.plugin.saveSettings();
 						this.rebuild();
 					}),
