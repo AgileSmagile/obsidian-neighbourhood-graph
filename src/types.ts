@@ -31,6 +31,8 @@ export interface NeighbourhoodGraphSettings {
 	colourGroups: ColourGroup[];
 	defaultNodeColour: string;
 	tagConceptColour: string;
+	/** 0 = all same size, 10 = dramatic size difference by salience */
+	salienceImpact: number;
 	lineColour: number;
 	lineThickness: number;
 	spread: number;
@@ -44,6 +46,7 @@ export const DEFAULT_SETTINGS: NeighbourhoodGraphSettings = {
 	colourGroups: [],
 	defaultNodeColour: '#6b7280',
 	tagConceptColour: '#d4a017',
+	salienceImpact: 5,
 	lineColour: 75,
 	lineThickness: 1,
 	spread: 5,

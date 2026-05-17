@@ -85,7 +85,8 @@
 }
 
 .ng-settings-panel .setting-item-description {
-	display: none;
+	font-size: 11px;
+	color: var(--text-faint);
 }
 
 .ng-section-label {
@@ -121,6 +122,11 @@
 .ng-slider-label {
 	font-size: 11px;
 	color: var(--text-muted);
+}
+
+.ng-slider-desc {
+	font-size: 10px;
+	color: var(--text-faint);
 }
 
 .ng-slider {

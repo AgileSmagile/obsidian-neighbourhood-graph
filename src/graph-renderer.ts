@@ -43,33 +43,35 @@ function nodeRadius(node: SimNode): number {
 }
 
 /**
- * Scale note radii by connection strength. Uses a log scale so the
- * difference between 1 and 3 connections is more visible than between
- * 10 and 12. Focus gets fixed max size.
+ * Scale note radii by connection strength, controlled by salienceImpact.
+ *   0 = all same size (mid-range)
+ *  10 = dramatic: weakest at 10% of max, strongest at max
+ * Focus gets fixed max size.
  */
-function computeRadii(nodes: SimNode[]): void {
+function computeRadii(nodes: SimNode[], salienceImpact: number): void {
 	const noteNodes = nodes.filter((n) => n.type === 'note' && !n.focus);
 	const strengths = noteNodes.map((n) => n.strength ?? 0);
 	const minStr = Math.min(...strengths, 0);
 	const maxStr = Math.max(...strengths, 1);
 	const range = maxStr - minStr;
 
+	// impact 0 → minR = maxR (uniform). impact 10 → minR = maxR * 0.1
+	const impactFactor = salienceImpact / 10;
+	const uniformR = (NOTE_R_MIN + NOTE_R_MAX) / 2;
+	const effectiveMin = NOTE_R_MAX - impactFactor * (NOTE_R_MAX - NOTE_R_MIN);
+
 	for (const node of nodes) {
 		if (node.type !== 'note') {
 			node.r = TAG_R;
 		} else if (node.focus) {
 			node.r = FOCUS_R;
+		} else if (impactFactor === 0 || range === 0) {
+			node.r = uniformR;
 		} else {
 			const s = node.strength ?? 0;
-			// When all strengths are equal, use a mid-range size
-			if (range === 0) {
-				node.r = (NOTE_R_MIN + NOTE_R_MAX) / 2;
-			} else {
-				const t = (s - minStr) / range;
-				// Log curve: small differences at low end are more visible
-				const curved = Math.sqrt(t);
-				node.r = NOTE_R_MIN + curved * (NOTE_R_MAX - NOTE_R_MIN);
-			}
+			const t = (s - minStr) / range;
+			const curved = Math.sqrt(t);
+			node.r = effectiveMin + curved * (NOTE_R_MAX - effectiveMin);
 		}
 	}
 }
@@ -187,7 +189,7 @@ export class GraphRenderer {
 
 		const nodes: SimNode[] = data.nodes.map((n) => ({ ...n, r: 0 }));
 		const edges: SimEdge[] = data.edges.map((e) => ({ ...e }));
-		computeRadii(nodes);
+		computeRadii(nodes, this.settings.salienceImpact);
 
 		this.simulation = d3.forceSimulation(nodes)
 			.force('link', d3.forceLink<SimNode, SimEdge>(edges)

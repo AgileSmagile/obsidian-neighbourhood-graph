@@ -265,6 +265,24 @@ export class NeighbourhoodGraphView extends ItemView {
 					}),
 			);
 
+		// Salience impact
+		panel.createEl('div', { text: 'Display', cls: 'ng-section-label' });
+
+		const salienceWrapper = panel.createDiv({ cls: 'ng-slider-wrapper' });
+		salienceWrapper.createEl('label', { text: 'Size variation', cls: 'ng-slider-label' });
+		const salienceDesc = salienceWrapper.createEl('span', {
+			text: '0 = uniform, 10 = dramatic',
+			cls: 'ng-slider-desc',
+		});
+		const salienceInput = salienceWrapper.createEl('input', { type: 'range', cls: 'ng-slider' });
+		salienceInput.min = '0';
+		salienceInput.max = '10';
+		salienceInput.value = String(this.plugin.settings.salienceImpact);
+		salienceInput.addEventListener('input', async () => {
+			this.plugin.settings.salienceImpact = Number(salienceInput.value);
+			await this.plugin.saveSettings();
+		});
+
 		// Physics sliders
 		panel.createEl('div', { text: 'Physics', cls: 'ng-section-label' });
 
