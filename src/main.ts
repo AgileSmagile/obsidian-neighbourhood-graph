@@ -40,6 +40,12 @@ export default class NeighbourhoodGraphPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+		// Notify any open graph views to rebuild with new settings
+		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+			if (leaf.view instanceof NeighbourhoodGraphView) {
+				(leaf.view as NeighbourhoodGraphView).onSettingsChanged();
+			}
+		}
 	}
 
 	private async activateView(): Promise<void> {

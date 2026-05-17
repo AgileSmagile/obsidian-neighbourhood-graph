@@ -133,16 +133,6 @@ export class NeighbourhoodGraphView extends ItemView {
 			}, 500, true)),
 		);
 
-		// Rebuild when view becomes visible again (e.g. after returning from settings)
-		this.registerEvent(
-			this.app.workspace.on('layout-change', debounce(() => {
-				if (this.focusFile && this.leaf.view === this) {
-					this.rebuild();
-					this.buildSettingsPanel();
-				}
-			}, 300, true)),
-		);
-
 		// Initial render
 		this.onActiveLeafChange();
 	}
@@ -170,6 +160,11 @@ export class NeighbourhoodGraphView extends ItemView {
 			if (file && file.extension === 'md') return file;
 		}
 		return null;
+	}
+
+	onSettingsChanged(): void {
+		this.buildSettingsPanel();
+		this.rebuild();
 	}
 
 	recentreOn(filePath: string): void {
