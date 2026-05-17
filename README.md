@@ -1,17 +1,21 @@
 # Neighbourhood Graph
 
-An Obsidian plugin that shows the current note's neighbourhood as an interactive D3.js force-directed graph in a sidebar panel. Navigate your vault by exploring connections between notes, shared tags, and backlinks.
+An Obsidian plugin that shows the current note's neighbourhood as an interactive force-directed graph in a sidebar panel. Navigate your vault by exploring connections between notes, shared tags, and backlinks.
 
----
+![Neighbourhood graph with colour groups, size variation, and settings panel](docs/screenshot-main.png)
 
 ## What it does
 
 Opens as a right-sidebar panel. As you navigate between notes, the graph recentres on the active note and shows:
 
-- **The focus note** (highlighted with an amber glow, largest node)
+- **The focus note** highlighted with an amber glow, largest node
 - **Neighbour notes** connected via shared tags or backlinks, sized by relevance
 - **Shared tag nodes** (diamond shapes) representing tags that connect notes
 - **Edges** showing the relationships between notes and concepts
+
+Hover any node to highlight its connections. At depth 2, secondary connections also light up, revealing the structure around any note in the neighbourhood.
+
+![Two-hop highlight showing #capdev connections radiating from the focus note](docs/screenshot-highlight.png)
 
 ### Interactions
 
@@ -22,8 +26,6 @@ Opens as a right-sidebar panel. As you navigate between notes, the graph recentr
 | Double-click | Opens the note in the editor and recentres |
 | Drag | Repositions a node |
 | Scroll | Zoom in and out |
-
----
 
 ## Installation
 
@@ -40,11 +42,9 @@ Opens as a right-sidebar panel. As you navigate between notes, the graph recentr
 3. Copy all three files into that folder
 4. Settings > Community plugins > reload and enable **Neighbourhood Graph**
 
----
-
 ## Settings
 
-Click the gear icon in the top-right corner of the graph panel to access settings.
+Click the gear icon in the top-right corner of the graph panel. Each setting has an info icon with a tooltip explaining what it controls.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -67,7 +67,7 @@ Colour groups are configured in Settings > Neighbourhood Graph. Assign colours t
 
 First matching rule wins. You can import colour groups directly from Obsidian's built-in graph view with the **Import from graph view** button.
 
----
+![Import colour groups from Obsidian's graph view](docs/screenshot-import.png)
 
 ## How it works
 
@@ -79,8 +79,6 @@ The plugin reads Obsidian's metadata cache for tags and resolved links. No custo
 - Well-connected hub notes rank higher (logarithmic scaling)
 
 The top N neighbours (configurable) are shown, with node size reflecting their relevance to the focus note.
-
----
 
 ## Licence
 
