@@ -23,13 +23,12 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
+		this.containerEl.empty();
 
 		// --- Graph behaviour ---
-		containerEl.createEl('h3', { text: 'Graph behaviour' });
+		this.containerEl.createEl('h3', { text: 'Graph behaviour' });
 
-		new Setting(containerEl)
+		new Setting(this.containerEl)
 			.setName('Highlight depth')
 			.setDesc('How many tiers of connections light up when you hover a node. 1 hop highlights only direct connections. 2 hops also highlights connections of connections.')
 			.addDropdown((drop) =>
@@ -43,7 +42,7 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		new Setting(containerEl)
+		new Setting(this.containerEl)
 			.setName('Max neighbours')
 			.setDesc('Maximum number of notes shown around the focus note. The most strongly connected neighbours are shown first. Lower values keep the graph readable; raise it for well-connected vaults.')
 			.addText((text) => {
@@ -60,7 +59,7 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 					});
 			});
 
-		new Setting(containerEl)
+		new Setting(this.containerEl)
 			.setName('Show path in tooltip')
 			.setDesc('When hovering a note node, show its vault-relative folder path below the title. Useful for distinguishing notes with similar names.')
 			.addToggle((toggle) =>
@@ -73,9 +72,9 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 			);
 
 		// --- Colour groups ---
-		containerEl.createEl('h3', { text: 'Colour groups' });
+		this.containerEl.createEl('h3', { text: 'Colour groups' });
 
-		new Setting(containerEl)
+		new Setting(this.containerEl)
 			.setName('Default node colour')
 			.setDesc('Notes not matching any group use this colour. Set to your theme\'s accent by default.')
 			.addColorPicker((picker) =>
@@ -86,13 +85,13 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		containerEl.createEl('p', {
+		this.containerEl.createEl('p', {
 			text: 'Assign colours to notes by query. Supported queries: "path:folder/", "tag:#name", or plain text (matches note title). First matching rule wins.',
 			cls: 'setting-item-description',
 		});
 
 		// Import from Obsidian graph button
-		new Setting(containerEl)
+		new Setting(this.containerEl)
 			.setName('Import from graph view')
 			.setDesc('Copy colour groups from Obsidian\'s built-in graph view settings')
 			.addButton((btn) =>
@@ -103,10 +102,10 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 
 		// Existing groups
 		for (let i = 0; i < this.plugin.settings.colourGroups.length; i++) {
-			this.renderColourGroup(containerEl, i);
+			this.renderColourGroup(this.containerEl, i);
 		}
 
-		new Setting(containerEl)
+		new Setting(this.containerEl)
 			.addButton((btn) =>
 				btn.setButtonText('Add group').onClick(async () => {
 					this.plugin.settings.colourGroups.push({ query: '', colour: '#6b7280' });
@@ -116,10 +115,10 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 			);
 	}
 
-	private renderColourGroup(containerEl: HTMLElement, index: number): void {
+	private renderColourGroup(container: HTMLElement, index: number): void {
 		const group = this.plugin.settings.colourGroups[index];
 
-		const setting = new Setting(containerEl)
+		const setting = new Setting(container)
 			.addText((text) =>
 				text
 					.setPlaceholder('e.g. path:people/')

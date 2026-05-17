@@ -292,6 +292,11 @@ export class NeighbourhoodGraphView extends ItemView {
 		];
 
 		const grid = panel.createDiv({ cls: 'ng-slider-grid' });
+		const updatePhysicsSetting = (key: 'lineColour' | 'lineThickness' | 'spread' | 'linkPull', val: number): void => {
+			this.plugin.settings[key] = val;
+			this.plugin.saveSettings();
+			if (this.renderer) this.renderer.updateSlider(key, val);
+		};
 		for (const s of sliders) {
 			const wrapper = grid.createDiv({ cls: 'ng-slider-wrapper' });
 			wrapper.createEl('label', { text: s.label, cls: 'ng-slider-label' });
@@ -300,13 +305,9 @@ export class NeighbourhoodGraphView extends ItemView {
 			input.max = String(s.max);
 			input.value = String(this.plugin.settings[s.key]);
 
+			const key = s.key;
 			input.addEventListener('input', () => {
-				const val = Number(input.value);
-				this.plugin.settings[s.key] = val as never;
-				this.plugin.saveSettings();
-				if (this.renderer) {
-					this.renderer.updateSlider(s.key, val);
-				}
+				updatePhysicsSetting(key, Number(input.value));
 			});
 		}
 
@@ -335,8 +336,13 @@ export class NeighbourhoodGraphView extends ItemView {
 
 		const settingsBtn = btnRow.createEl('button', { text: 'Open settings', cls: 'ng-import-btn' });
 		settingsBtn.addEventListener('click', () => {
-			(this.app as any).setting.open();
-			(this.app as any).setting.openTabById('neighbourhood-graph');
+			// Open plugin's settings tab via Obsidian's internal settings API
+			const appSetting = (this.app as unknown as Record<string, unknown>).setting as
+				{ open(): void; openTabById(id: string): void } | undefined;
+			if (appSetting) {
+				appSetting.open();
+				appSetting.openTabById('neighbourhood-graph');
+			}
 		});
 	}
 

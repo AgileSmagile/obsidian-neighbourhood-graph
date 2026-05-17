@@ -182,11 +182,12 @@ export class GraphRenderer {
 		focusMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
 		const g = this.svg.append('g');
-		this.svg.call(
-			d3.zoom<SVGSVGElement, unknown>()
-				.scaleExtent([0.3, 3])
-				.on('zoom', (e) => g.attr('transform', e.transform as unknown as string)) as never,
-		);
+		const zoom = d3.zoom<SVGSVGElement, unknown>()
+			.scaleExtent([0.3, 3])
+			.on('zoom', (e: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+				g.attr('transform', e.transform.toString());
+			});
+		this.svg.call(zoom);
 
 		const nodes: SimNode[] = data.nodes.map((n) => ({ ...n, r: 0 }));
 		const edges: SimEdge[] = data.edges.map((e) => ({ ...e }));
