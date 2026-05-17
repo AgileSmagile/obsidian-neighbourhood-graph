@@ -18,9 +18,19 @@ export function buildNeighbourhood(
 	const vault = app.vault;
 	const allFiles = vault.getMarkdownFiles();
 
+	// Build reverse-link index once (avoids O(n²) per getInLinks call)
+	const allResolved = app.metadataCache.resolvedLinks;
+	const reverseLinks = new Map<string, Set<string>>();
+	for (const [sourcePath, targets] of Object.entries(allResolved)) {
+		for (const targetPath of Object.keys(targets)) {
+			if (!reverseLinks.has(targetPath)) reverseLinks.set(targetPath, new Set());
+			reverseLinks.get(targetPath)!.add(sourcePath);
+		}
+	}
+
 	const focusTags = getFileTags(focusFile, app);
 	const focusOutLinks = getOutLinks(focusFile, app);
-	const focusInLinks = getInLinks(focusFile, app);
+	const focusInLinks = reverseLinks.get(focusFile.path) ?? new Set<string>();
 	const focusAllLinks = new Set([...focusOutLinks, ...focusInLinks]);
 
 	const nodeMap = new Map<string, GraphNode>();
@@ -86,11 +96,8 @@ export function buildNeighbourhood(
 
 	// Hub score: neighbours that are themselves well-connected rank higher
 	for (const [notePath] of neighbourStrength) {
-		const file = vault.getFileByPath(notePath);
-		if (!file) continue;
-		const outCount = Object.keys(app.metadataCache.resolvedLinks[notePath] ?? {}).length;
-		const inCount = Object.values(app.metadataCache.resolvedLinks)
-			.filter((targets) => targets[notePath]).length;
+		const outCount = Object.keys(allResolved[notePath] ?? {}).length;
+		const inCount = (reverseLinks.get(notePath) ?? new Set()).size;
 		const hubScore = Math.log2(Math.max(1, outCount + inCount));
 		neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + hubScore);
 	}
@@ -205,13 +212,3 @@ function getOutLinks(file: TFile, app: App): Set<string> {
 	return links;
 }
 
-function getInLinks(file: TFile, app: App): Set<string> {
-	const links = new Set<string>();
-	const allResolved = app.metadataCache.resolvedLinks;
-	for (const [sourcePath, targets] of Object.entries(allResolved)) {
-		if (sourcePath !== file.path && targets[file.path]) {
-			links.add(sourcePath);
-		}
-	}
-	return links;
-}

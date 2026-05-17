@@ -115,6 +115,7 @@ export class GraphRenderer {
 	private _currentLineWidth: () => number = () => 1;
 	private _setLineColour: (v: string) => void = () => {};
 	private _setLineWidth: (v: number) => void = () => {};
+	private _clickTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(
 		container: HTMLElement,
@@ -279,7 +280,6 @@ export class GraphRenderer {
 			node.attr('opacity', 1);
 		};
 
-		let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
 		const node = g.append('g')
 			.selectAll<SVGGElement, SimNode>('g')
@@ -305,13 +305,13 @@ export class GraphRenderer {
 			.on('mouseleave', () => clearHighlight())
 			.on('click', (_, d) => {
 				if (d.type !== 'note') return;
-				if (clickTimer) {
-					clearTimeout(clickTimer);
-					clickTimer = null;
+				if (this._clickTimer) {
+					clearTimeout(this._clickTimer);
+					this._clickTimer = null;
 					this.callbacks.onNodeDoubleClick(d.id);
 				} else {
-					clickTimer = setTimeout(() => {
-						clickTimer = null;
+					this._clickTimer = setTimeout(() => {
+						this._clickTimer = null;
 						this.callbacks.onNodeClick(d.id);
 					}, 250);
 				}
@@ -386,15 +386,21 @@ export class GraphRenderer {
 
 		node
 			.on('mouseover', (_, d) => {
-				let html = `<strong>${d.label}</strong>`;
-				if (d.focus) html += ' <em>(focus)</em>';
-				if (d.type === 'note' && showPath && d.path) {
-					html += `<br/><span class="neighbourhood-graph-tooltip-sub">${d.path}</span>`;
-				} else if (d.type === 'tag') {
-					html += `<br/><span class="neighbourhood-graph-tooltip-sub">shared tag</span>`;
+				const tooltipEl = tooltip.node() as HTMLElement;
+				tooltipEl.empty();
+				const title = tooltipEl.createEl('strong', { text: d.label });
+				if (d.focus) {
+					tooltipEl.appendText(' ');
+					tooltipEl.createEl('em', { text: '(focus)' });
 				}
-				// Set content first so dimensions are available for positioning
-				tooltip.html(html).style('opacity', '1');
+				if (d.type === 'note' && showPath && d.path) {
+					tooltipEl.createEl('br');
+					tooltipEl.createEl('span', { text: d.path, cls: 'neighbourhood-graph-tooltip-sub' });
+				} else if (d.type === 'tag') {
+					tooltipEl.createEl('br');
+					tooltipEl.createEl('span', { text: 'shared tag', cls: 'neighbourhood-graph-tooltip-sub' });
+				}
+				tooltip.style('opacity', '1');
 			})
 			.on('mousemove', (e) => {
 				const rect = this.container.getBoundingClientRect();
@@ -464,6 +470,10 @@ export class GraphRenderer {
 	}
 
 	destroy(): void {
+		if (this._clickTimer) {
+			clearTimeout(this._clickTimer);
+			this._clickTimer = null;
+		}
 		if (this.simulation) {
 			this.simulation.stop();
 			this.simulation = null;

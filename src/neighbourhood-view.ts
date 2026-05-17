@@ -62,14 +62,20 @@ export class NeighbourhoodGraphView extends ItemView {
 		setIcon(chevron, 'chevron-down');
 
 		const legendBody = legend.createDiv({ cls: 'ng-legend-body' });
-		legendBody.innerHTML = [
-			'<span class="ng-legend-item"><span class="ng-shape-circle ng-shape-focus"></span> Focus note</span>',
-			'<span class="ng-legend-item"><span class="ng-shape-circle"></span> Neighbour (size = relevance)</span>',
-			'<span class="ng-legend-item"><span class="ng-shape-diamond"></span> Shared tag</span>',
-			'<div class="ng-legend-divider"></div>',
-			'<span class="ng-legend-item">Click = centre on</span>',
-			'<span class="ng-legend-item">Double-click = open</span>',
-		].join('');
+		const legendItems: Array<{ shape?: string; text: string }> = [
+			{ shape: 'ng-shape-circle ng-shape-focus', text: 'Focus note' },
+			{ shape: 'ng-shape-circle', text: 'Neighbour (size = relevance)' },
+			{ shape: 'ng-shape-diamond', text: 'Shared tag' },
+		];
+		for (const item of legendItems) {
+			const row = legendBody.createSpan({ cls: 'ng-legend-item' });
+			if (item.shape) row.createSpan({ cls: item.shape });
+			row.appendText(` ${item.text}`);
+		}
+		legendBody.createDiv({ cls: 'ng-legend-divider' });
+		for (const hint of ['Click = centre on', 'Double-click = open']) {
+			legendBody.createSpan({ cls: 'ng-legend-item', text: hint });
+		}
 
 		// Collapse/expand
 		let legendCollapsed = false;
