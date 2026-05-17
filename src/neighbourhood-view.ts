@@ -224,7 +224,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		// Depth
 		new Setting(panel)
 			.setName('Highlight depth')
-			.setDesc('Hover highlight tiers')
+			.setDesc('1 = direct connections. 2 = also highlights connections of connections.')
 			.addDropdown((drop) =>
 				drop
 					.addOption('1', '1 hop')
@@ -240,7 +240,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		// Max neighbours
 		new Setting(panel)
 			.setName('Max neighbours')
-			.setDesc('Most connected shown first')
+			.setDesc('Cap on displayed notes. Strongest connections shown first.')
 			.addText((text) => {
 				text.inputEl.type = 'number';
 				text.inputEl.style.width = '60px';
@@ -259,6 +259,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		// Show path
 		new Setting(panel)
 			.setName('Show path in tooltip')
+			.setDesc('Folder path below note title on hover')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.showPathInTooltip)

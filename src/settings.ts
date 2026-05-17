@@ -75,8 +75,19 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 		// --- Colour groups ---
 		containerEl.createEl('h3', { text: 'Colour groups' });
 
+		new Setting(containerEl)
+			.setName('Default node colour')
+			.setDesc('Notes not matching any group use this colour. Set to your theme\'s accent by default.')
+			.addColorPicker((picker) =>
+				picker.setValue(this.plugin.settings.defaultNodeColour)
+					.onChange(async (val) => {
+						this.plugin.settings.defaultNodeColour = val;
+						await this.plugin.saveSettings();
+					}),
+			);
+
 		containerEl.createEl('p', {
-			text: 'Assign colours to notes by query. Supported queries: "path:folder/", "tag:#name", or plain text (matches note title). First matching rule wins; drag to reorder.',
+			text: 'Assign colours to notes by query. Supported queries: "path:folder/", "tag:#name", or plain text (matches note title). First matching rule wins.',
 			cls: 'setting-item-description',
 		});
 

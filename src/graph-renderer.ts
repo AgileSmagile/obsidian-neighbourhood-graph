@@ -87,13 +87,13 @@ function matchesColourGroup(node: GraphNode, group: ColourGroup): boolean {
 	return node.label.toLowerCase().includes(q);
 }
 
-function getNodeColour(node: GraphNode, settings: NeighbourhoodGraphSettings): string {
+function getNodeColour(node: GraphNode, settings: NeighbourhoodGraphSettings, defaultColour: string): string {
 	if (node.type === 'tag') return settings.tagConceptColour;
 
 	for (const group of settings.colourGroups) {
 		if (matchesColourGroup(node, group)) return group.colour;
 	}
-	return settings.defaultNodeColour;
+	return defaultColour;
 }
 
 function getEdgeNodeId(node: SimNode | string): string {
@@ -132,6 +132,13 @@ export class GraphRenderer {
 
 		const textColour = dark ? '#e5e7eb' : '#111827';
 		const tagTextColour = dark ? '#9ca3af' : '#6b7280';
+
+		// Default node colour: user setting, or theme accent, or fallback grey
+		const themeAccent = getComputedStyle(document.body)
+			.getPropertyValue('--interactive-accent').trim();
+		const defaultNodeColour = this.settings.defaultNodeColour !== '#6b7280'
+			? this.settings.defaultNodeColour
+			: (themeAccent || '#6b7280');
 
 		const initLineColour = greyFromSlider(this.settings.lineColour);
 		const initLineWidth = widthFromSlider(this.settings.lineThickness);
@@ -311,7 +318,7 @@ export class GraphRenderer {
 		node.each(function (this: SVGGElement, d: SimNode) {
 			const sel = d3.select(this);
 			if (d.type === 'note') {
-				const fill = getNodeColour(d, settingsRef);
+				const fill = getNodeColour(d, settingsRef, defaultNodeColour);
 				if (d.focus) {
 					sel.append('circle')
 						.attr('r', d.r + 4)
@@ -331,7 +338,7 @@ export class GraphRenderer {
 				const r = d.r;
 				sel.append('polygon')
 					.attr('points', `0,${-r} ${r},0 0,${r} ${-r},0`)
-					.attr('fill', getNodeColour(d, settingsRef))
+					.attr('fill', getNodeColour(d, settingsRef, defaultNodeColour))
 					.attr('stroke', '#fff')
 					.attr('stroke-width', 1);
 			}
