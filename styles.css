@@ -124,9 +124,35 @@
 	color: var(--text-muted);
 }
 
-.ng-slider-desc {
-	font-size: 10px;
+/* Info icon tooltip */
+.ng-info-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: 4px;
 	color: var(--text-faint);
+	cursor: help;
+	vertical-align: middle;
+}
+
+.ng-info-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.ng-info-icon:hover {
+	color: var(--text-muted);
+}
+
+.ng-label-row {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+/* Hide inline descriptions in sidebar — use info icons instead */
+.ng-settings-panel .setting-item-description {
+	display: none;
 }
 
 .ng-slider {

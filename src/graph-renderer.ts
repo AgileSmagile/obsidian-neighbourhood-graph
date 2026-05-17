@@ -1,10 +1,11 @@
 import * as d3 from 'd3';
 import type { GraphData, GraphNode, NeighbourhoodGraphSettings, ColourGroup } from './types';
 
-const NOTE_R_MIN = 8;
-const NOTE_R_MAX = 18;
+const NOTE_R_MIN = 4;
+const NOTE_R_MAX = 20;
 const FOCUS_R = 20;
 const TAG_R = 6;
+const TAG_COLOUR = '#d4a017';
 const HIGHLIGHT_COLOUR = '#fbbf24';
 
 interface SimNode extends GraphNode, d3.SimulationNodeDatum {
@@ -90,7 +91,7 @@ function matchesColourGroup(node: GraphNode, group: ColourGroup): boolean {
 }
 
 function getNodeColour(node: GraphNode, settings: NeighbourhoodGraphSettings, defaultColour: string): string {
-	if (node.type === 'tag') return settings.tagConceptColour;
+	if (node.type === 'tag') return TAG_COLOUR;
 
 	for (const group of settings.colourGroups) {
 		if (matchesColourGroup(node, group)) return group.colour;

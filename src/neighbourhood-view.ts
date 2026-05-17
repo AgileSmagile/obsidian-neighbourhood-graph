@@ -217,10 +217,9 @@ export class NeighbourhoodGraphView extends ItemView {
 		panel.empty();
 
 		// Depth
-		new Setting(panel)
-			.setName('Highlight depth')
-			.setDesc('1 = direct connections. 2 = also highlights connections of connections.')
-			.addDropdown((drop) =>
+		this.addSettingWithInfo(panel, 'Highlight depth',
+			'How many tiers of connections light up when you hover a node. 1 = direct connections only. 2 = also highlights connections of connections.',
+			(s) => s.addDropdown((drop) =>
 				drop
 					.addOption('1', '1 hop')
 					.addOption('2', '2 hops')
@@ -228,15 +227,12 @@ export class NeighbourhoodGraphView extends ItemView {
 					.onChange(async (val) => {
 						this.plugin.settings.depth = Number(val) as 1 | 2;
 						await this.plugin.saveSettings();
-						this.rebuild();
 					}),
-			);
+			));
 
-		// Max neighbours
-		new Setting(panel)
-			.setName('Max neighbours')
-			.setDesc('Cap on displayed notes. Strongest connections shown first.')
-			.addText((text) => {
+		this.addSettingWithInfo(panel, 'Max neighbours',
+			'Maximum notes shown around the focus note. The most strongly connected neighbours are shown first.',
+			(s) => s.addText((text) => {
 				text.inputEl.type = 'number';
 				text.inputEl.style.width = '60px';
 				return text
@@ -246,34 +242,31 @@ export class NeighbourhoodGraphView extends ItemView {
 						if (!isNaN(num) && num > 0) {
 							this.plugin.settings.maxNeighbours = num;
 							await this.plugin.saveSettings();
-							this.rebuild();
 						}
 					});
-			});
+			}));
 
-		// Show path
-		new Setting(panel)
-			.setName('Show path in tooltip')
-			.setDesc('Folder path below note title on hover')
-			.addToggle((toggle) =>
+		this.addSettingWithInfo(panel, 'Show path in tooltip',
+			'When hovering a note, show its vault folder path below the title.',
+			(s) => s.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.showPathInTooltip)
 					.onChange(async (val) => {
 						this.plugin.settings.showPathInTooltip = val;
 						await this.plugin.saveSettings();
-						this.rebuild();
 					}),
-			);
+			));
 
-		// Salience impact
+		// Display section
 		panel.createEl('div', { text: 'Display', cls: 'ng-section-label' });
 
 		const salienceWrapper = panel.createDiv({ cls: 'ng-slider-wrapper' });
-		salienceWrapper.createEl('label', { text: 'Size variation', cls: 'ng-slider-label' });
-		const salienceDesc = salienceWrapper.createEl('span', {
-			text: '0 = uniform, 10 = dramatic',
-			cls: 'ng-slider-desc',
-		});
+		const salienceLabelRow = salienceWrapper.createDiv({ cls: 'ng-label-row' });
+		salienceLabelRow.createEl('label', { text: 'Size by relevance', cls: 'ng-slider-label' });
+		const salienceInfo = salienceLabelRow.createEl('span', { cls: 'ng-info-icon', attr: {
+			'aria-label': 'Scales node size by how strongly connected a neighbour is. More shared tags and links = bigger node. 0 = all same size. 10 = maximum variation.',
+		}});
+		setIcon(salienceInfo, 'info');
 		const salienceInput = salienceWrapper.createEl('input', { type: 'range', cls: 'ng-slider' });
 		salienceInput.min = '0';
 		salienceInput.max = '10';
@@ -345,6 +338,20 @@ export class NeighbourhoodGraphView extends ItemView {
 			(this.app as any).setting.open();
 			(this.app as any).setting.openTabById('neighbourhood-graph');
 		});
+	}
+
+	private addSettingWithInfo(
+		container: HTMLElement,
+		name: string,
+		tooltip: string,
+		configure: (s: Setting) => void,
+	): void {
+		const setting = new Setting(container).setName(name);
+		// Add info icon with hover tooltip after the name
+		const nameEl = setting.nameEl;
+		const info = nameEl.createEl('span', { cls: 'ng-info-icon', attr: { 'aria-label': tooltip } });
+		setIcon(info, 'info');
+		configure(setting);
 	}
 
 	private async importColourGroups(): Promise<void> {
