@@ -84,6 +84,7 @@ export class NeighbourhoodGraphView extends ItemView {
 			legendCollapsed = !legendCollapsed;
 			legendBody.toggleClass('ng-legend-collapsed', legendCollapsed);
 			chevron.toggleClass('ng-legend-chevron-collapsed', legendCollapsed);
+			legend.toggleClass('ng-legend-is-collapsed', legendCollapsed);
 		});
 
 		// Draggable
