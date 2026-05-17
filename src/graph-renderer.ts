@@ -392,17 +392,20 @@ export class GraphRenderer {
 				} else if (d.type === 'tag') {
 					html += `<br/><span class="neighbourhood-graph-tooltip-sub">shared tag</span>`;
 				}
-				tooltip.style('opacity', '1').html(html);
+				// Set content first so dimensions are available for positioning
+				tooltip.html(html).style('opacity', '1');
 			})
 			.on('mousemove', (e) => {
 				const rect = this.container.getBoundingClientRect();
 				const tooltipEl = tooltip.node() as HTMLElement;
 				const tw = tooltipEl.offsetWidth;
-				const th = tooltipEl.offsetHeight;
+				const th = tooltipEl.offsetHeight || 40;
 				let left = e.clientX - rect.left + 12;
-				let top = e.clientY - rect.top - th - 8;
+				// Always prefer above cursor with enough clearance
+				let top = e.clientY - rect.top - th - 16;
 				if (left + tw > rect.width) left = e.clientX - rect.left - tw - 12;
-				if (top < 0) top = e.clientY - rect.top + 12;
+				// Only fall below if truly no room above
+				if (top < 0) top = e.clientY - rect.top + 24;
 				tooltip.style('left', `${left}px`).style('top', `${top}px`);
 			})
 			.on('mouseout', () => tooltip.style('opacity', '0'));
