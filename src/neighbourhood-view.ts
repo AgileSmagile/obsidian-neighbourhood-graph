@@ -16,6 +16,8 @@ export class NeighbourhoodGraphView extends ItemView {
 	private focusFile: TFile | null = null;
 	private excalibrainFields: Map<string, EdgeRelationType> | null = null;
 	private _legendEdgeLines: SVGLineElement[] = [];
+	/** Paths of all notes currently visible in the graph — used to filter metadata change events. */
+	private _relevantPaths = new Set<string>();
 
 	constructor(leaf: WorkspaceLeaf, plugin: NeighbourhoodGraphPlugin) {
 		super(leaf);
@@ -177,10 +179,14 @@ export class NeighbourhoodGraphView extends ItemView {
 			}, 200, true)),
 		);
 
-		// Listen for metadata changes
+		// Listen for metadata changes — only rebuild when a file relevant to the
+		// current graph changes. 'resolved' fires for all background cache work
+		// (sync, other plugins) and causes constant spurious redraws.
 		this.registerEvent(
-			this.app.metadataCache.on('resolved', debounce(() => {
-				if (this.focusFile) this.rebuild();
+			this.app.metadataCache.on('changed', debounce((file: TFile) => {
+				if (this.focusFile && this._relevantPaths.has(file.path)) {
+					this.rebuild();
+				}
 			}, 500, true)),
 		);
 
@@ -243,6 +249,11 @@ export class NeighbourhoodGraphView extends ItemView {
 		if (!this.focusFile || !this.graphContainer) return;
 
 		const data = buildNeighbourhood(this.focusFile, this.app, this.plugin.settings, this.excalibrainFields);
+
+		// Track which note paths are visible so metadata change events can be filtered
+		this._relevantPaths = new Set(
+			data.nodes.filter((n) => n.type === 'note').map((n) => n.id),
+		);
 
 		// Remove truncation indicator from previous render
 		const oldTruncated = this.graphContainer.querySelector('.ng-truncated');
