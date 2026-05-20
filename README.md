@@ -2,7 +2,7 @@
 
 An Obsidian plugin that shows the current note's neighbourhood as an interactive force-directed graph in a sidebar panel. Navigate your vault by exploring connections between notes, shared tags, and backlinks.
 
-![Neighbourhood graph with colour groups, size variation, and settings panel](docs/screenshot-main.png)
+> Screenshots will be added in a future update.
 
 ## What it does
 
@@ -14,8 +14,6 @@ Opens as a right-sidebar panel. As you navigate between notes, the graph recentr
 - **Typed edges** — when Excalibrain is installed, edges between related notes are drawn with distinct line styles
 
 Hover any node to highlight its connections. At depth 2, secondary connections also light up, revealing the structure around any note in the neighbourhood.
-
-![Two-hop highlight showing connections radiating from the focus note](docs/screenshot-highlight.png)
 
 ### Interactions
 
@@ -79,8 +77,6 @@ Assign colours to notes by query. Three query types are supported:
 - Plain text — matches against note title
 
 First matching rule wins. Groups are collapsible in the settings tab once at least one exists. Use the **Import** button to copy colour groups directly from Obsidian's built-in graph view.
-
-![Import colour groups from Obsidian's graph view](docs/screenshot-import.png)
 
 ## Excalibrain integration
 
