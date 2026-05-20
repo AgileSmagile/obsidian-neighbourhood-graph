@@ -3,6 +3,7 @@ import type NeighbourhoodGraphPlugin from './main';
 import { buildNeighbourhood } from './graph-data';
 import { GraphRenderer } from './graph-renderer';
 import { loadExcalibrainConfig, buildFieldLookup } from './excalibrain';
+import { greyFromSlider, widthFromSlider } from './graph-renderer';
 import type { EdgeRelationType } from './types';
 
 export const VIEW_TYPE = 'neighbourhood-graph';
@@ -14,6 +15,7 @@ export class NeighbourhoodGraphView extends ItemView {
 	private settingsPanel: HTMLElement | null = null;
 	private focusFile: TFile | null = null;
 	private excalibrainFields: Map<string, EdgeRelationType> | null = null;
+	private _legendEdgeLines: SVGLineElement[] = [];
 
 	constructor(leaf: WorkspaceLeaf, plugin: NeighbourhoodGraphPlugin) {
 		super(leaf);
@@ -86,6 +88,9 @@ export class NeighbourhoodGraphView extends ItemView {
 				{ dash: '8 3 2 3',     text: 'Previous / next' },
 			];
 			const svgNS = 'http://www.w3.org/2000/svg';
+			const initLineColour = greyFromSlider(this.plugin.settings.lineColour);
+			const initLineWidth = String(Math.max(1, widthFromSlider(this.plugin.settings.lineThickness)));
+			this._legendEdgeLines = [];
 			for (const hint of edgeHints) {
 				const row = legendBody.createSpan({ cls: 'ng-legend-item' });
 				const svg = document.createElementNS(svgNS, 'svg');
@@ -93,17 +98,18 @@ export class NeighbourhoodGraphView extends ItemView {
 				svg.setAttribute('height', '10');
 				svg.style.flexShrink = '0';
 				svg.style.verticalAlign = 'middle';
-				const line = document.createElementNS(svgNS, 'line');
+				const line = document.createElementNS(svgNS, 'line') as SVGLineElement;
 				line.setAttribute('x1', '0');
 				line.setAttribute('y1', '5');
 				line.setAttribute('x2', '20');
 				line.setAttribute('y2', '5');
-				line.setAttribute('stroke', 'currentColor');
-				line.setAttribute('stroke-width', '1.5');
+				line.setAttribute('stroke', initLineColour);
+				line.setAttribute('stroke-width', initLineWidth);
 				if (hint.dash) line.setAttribute('stroke-dasharray', hint.dash);
 				svg.appendChild(line);
 				row.appendChild(svg);
 				row.appendText(` ${hint.text}`);
+				this._legendEdgeLines.push(line);
 			}
 		}
 
@@ -371,7 +377,16 @@ export class NeighbourhoodGraphView extends ItemView {
 			const key = s.key;
 			// input: drive the live simulation — no save, no rebuild
 			input.addEventListener('input', () => {
-				if (this.renderer) this.renderer.updateSlider(key, Number(input.value));
+				const v = Number(input.value);
+				if (this.renderer) this.renderer.updateSlider(key, v);
+				// Keep legend swatches in sync with line colour/thickness
+				if (key === 'lineColour') {
+					const c = greyFromSlider(v);
+					this._legendEdgeLines.forEach((l) => l.setAttribute('stroke', c));
+				} else if (key === 'lineThickness') {
+					const w = String(Math.max(1, widthFromSlider(v)));
+					this._legendEdgeLines.forEach((l) => l.setAttribute('stroke-width', w));
+				}
 			});
 			// change: persist on mouseup — silent save, no rebuild needed
 			input.addEventListener('change', async () => {

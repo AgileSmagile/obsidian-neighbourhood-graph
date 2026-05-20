@@ -39,12 +39,12 @@ export interface RendererCallbacks {
 	onNodeDoubleClick: (nodeId: string) => void;
 }
 
-function greyFromSlider(v: number): string {
+export function greyFromSlider(v: number): string {
 	const level = Math.round(220 - v * 2.05);
 	return `rgb(${level},${level},${level})`;
 }
 
-function widthFromSlider(v: number): number {
+export function widthFromSlider(v: number): number {
 	return 0.5 + (v - 1) * (2.5 / 9);
 }
 
