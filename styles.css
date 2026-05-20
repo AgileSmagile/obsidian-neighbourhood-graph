@@ -359,6 +359,82 @@
 	font-style: italic;
 }
 
+/* Import row — label + discrete icon button */
+.ng-import-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 6px 0;
+	margin-bottom: 2px;
+}
+
+.ng-import-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.ng-icon-btn.clickable-icon {
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	padding: 4px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	transition: color 0.15s, background 0.15s;
+}
+
+.ng-icon-btn.clickable-icon:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+/* Collapsible disclosure rows */
+.ng-disclosure-row {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 0;
+	cursor: pointer;
+	user-select: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	border-top: 1px solid var(--background-modifier-border);
+	margin-top: 4px;
+}
+
+.ng-disclosure-row:hover {
+	color: var(--text-normal);
+}
+
+.ng-disclosure-chevron {
+	display: flex;
+	align-items: center;
+	transition: transform 0.15s ease;
+}
+
+.ng-disclosure-chevron svg {
+	width: 13px;
+	height: 13px;
+}
+
+.ng-disclosure-chevron.ng-chevron-collapsed {
+	transform: rotate(-90deg);
+}
+
+.ng-disclosure-label {
+	flex: 1;
+}
+
+.ng-disclosure-body {
+	padding-left: 8px;
+	border-left: 2px solid var(--background-modifier-border);
+	margin-left: 4px;
+}
+
+.ng-disclosure-body.ng-disclosure-collapsed {
+	display: none;
+}
+
 /* Excalibrain status row in plugin settings */
 .ng-excali-status {
 	display: flex;

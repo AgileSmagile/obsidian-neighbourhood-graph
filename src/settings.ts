@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, App, Notice, setIcon } from 'obsidian';
+import { PluginSettingTab, Setting, App, Notice, setIcon, ButtonComponent } from 'obsidian';
 import type NeighbourhoodGraphPlugin from './main';
 import type { ColourGroup } from './types';
 
@@ -17,6 +17,8 @@ function obsidianRgbToHex(rgb: number): string {
 
 export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 	plugin: NeighbourhoodGraphPlugin;
+	/** Persists collapse state across re-renders triggered by add/remove/reorder */
+	private _groupsCollapsed: boolean | null = null;
 
 	constructor(app: App, plugin: NeighbourhoodGraphPlugin) {
 		super(app, plugin);
@@ -94,22 +96,53 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 			cls: 'setting-item-description',
 		});
 
-		new Setting(this.containerEl)
-			.setName('Import from graph view')
-			.setDesc('Copy colour groups from Obsidian\'s built-in graph view settings.')
-			.addButton((btn) =>
-				btn.setButtonText('Import').onClick(async () => {
-					await this.importFromGraphView();
-				}),
-			);
+		// Import row — icon button only, less prominent than a labelled button
+		const importRow = this.containerEl.createDiv({ cls: 'ng-import-row' });
+		importRow.createSpan({ text: 'Import from Obsidian graph view', cls: 'ng-import-label' });
+		const importIconBtn = new ButtonComponent(importRow);
+		importIconBtn
+			.setIcon('arrow-down-to-line')
+			.setTooltip('Import colour groups from Obsidian\'s built-in graph view')
+			.setClass('ng-icon-btn')
+			.onClick(async () => { await this.importFromGraphView(); });
 
-		for (let i = 0; i < this.plugin.settings.colourGroups.length; i++) {
-			this.renderColourGroup(this.containerEl, i);
+		// Collapsible group list
+		const groupCount = this.plugin.settings.colourGroups.length;
+		if (this._groupsCollapsed === null) {
+			// Default: collapsed when groups already exist, open when empty
+			this._groupsCollapsed = groupCount > 0;
 		}
 
-		new Setting(this.containerEl)
+		const disclosureRow = this.containerEl.createDiv({ cls: 'ng-disclosure-row' });
+		const chevron = disclosureRow.createSpan({ cls: 'ng-disclosure-chevron' });
+		setIcon(chevron, 'chevron-down');
+		const countLabel = disclosureRow.createSpan({
+			text: groupCount === 0 ? 'No groups — add one below' : `${groupCount} group${groupCount === 1 ? '' : 's'}`,
+			cls: 'ng-disclosure-label',
+		});
+
+		const groupsBody = this.containerEl.createDiv({ cls: 'ng-disclosure-body' });
+
+		// Apply initial collapsed state
+		if (this._groupsCollapsed) {
+			groupsBody.addClass('ng-disclosure-collapsed');
+			chevron.addClass('ng-chevron-collapsed');
+		}
+
+		disclosureRow.addEventListener('click', () => {
+			this._groupsCollapsed = !this._groupsCollapsed;
+			groupsBody.toggleClass('ng-disclosure-collapsed', this._groupsCollapsed!);
+			chevron.toggleClass('ng-chevron-collapsed', this._groupsCollapsed!);
+		});
+
+		for (let i = 0; i < this.plugin.settings.colourGroups.length; i++) {
+			this.renderColourGroup(groupsBody, i);
+		}
+
+		new Setting(groupsBody)
 			.addButton((btn) =>
 				btn.setButtonText('Add group').onClick(async () => {
+					this._groupsCollapsed = false; // expand on add so user sees the new row
 					this.plugin.settings.colourGroups.push({ query: '', colour: '#6b7280' });
 					await this.plugin.saveSettings();
 					this.display();
