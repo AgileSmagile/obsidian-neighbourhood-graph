@@ -47,4 +47,5 @@ jobs:
           gh release create "$tag" \
             --title "$tag" \
             --generate-notes \
+            --clobber \
             main.js manifest.json styles.css
