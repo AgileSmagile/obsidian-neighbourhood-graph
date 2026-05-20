@@ -100,6 +100,8 @@ export class NeighbourhoodGraphView extends ItemView {
 				svg.setAttribute('height', '10');
 				svg.setAttribute('viewBox', '0 0 20 10');
 				svg.style.display = 'block';
+				svg.style.width = '20px';
+				svg.style.height = '10px';
 				svg.style.flexShrink = '0';
 				const line = document.createElementNS(svgNS, 'line') as SVGLineElement;
 				line.setAttribute('x1', '0');
