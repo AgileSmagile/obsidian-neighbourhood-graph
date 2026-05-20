@@ -116,11 +116,8 @@ export function buildNeighbourhood(
 	// Excalibrain bonus: explicit typed relationships carry more weight than plain links
 	if (excalibrainFields) {
 		// Check focus note's frontmatter for outbound typed links
-		for (const fmLink of getFrontmatterLinks(focusFile, app)) {
-			const relType = excalibrainFields.get(fmLink.key.toLowerCase());
-			if (!relType) continue;
-			const targetPath = app.metadataCache.getFirstLinkpathDest(fmLink.link, focusFile.path)?.path;
-			if (targetPath && neighbourStrength.has(targetPath)) {
+		for (const { relType, targetPath } of getTypedFrontmatterLinks(focusFile, app, excalibrainFields)) {
+			if (neighbourStrength.has(targetPath)) {
 				neighbourStrength.set(targetPath, (neighbourStrength.get(targetPath) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
 			}
 		}
@@ -128,10 +125,7 @@ export function buildNeighbourhood(
 		for (const [notePath] of neighbourStrength) {
 			const file = app.vault.getFileByPath(notePath);
 			if (!file) continue;
-			for (const fmLink of getFrontmatterLinks(file, app)) {
-				const relType = excalibrainFields.get(fmLink.key.toLowerCase());
-				if (!relType) continue;
-				const targetPath = app.metadataCache.getFirstLinkpathDest(fmLink.link, notePath)?.path;
+			for (const { relType, targetPath } of getTypedFrontmatterLinks(file, app, excalibrainFields)) {
 				if (targetPath === focusFile.path) {
 					neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
 				}
@@ -215,8 +209,47 @@ export function buildNeighbourhood(
 	}
 }
 
-function getFrontmatterLinks(file: TFile, app: App): Array<{ key: string; link: string }> {
-	return app.metadataCache.getFileCache(file)?.frontmatterLinks ?? [];
+/**
+ * Returns all typed relationships declared in a file's frontmatter, resolved to target paths.
+ * Handles both [[wikilink]] and plain note name formats — Excalibrain uses plain names natively,
+ * while some users write [[wikilinks]] in frontmatter. Obsidian's frontmatterLinks cache only
+ * covers the wikilink variant, so we also read raw frontmatter string values.
+ */
+function getTypedFrontmatterLinks(
+	file: TFile,
+	app: App,
+	fieldLookup: Map<string, EdgeRelationType>,
+): Array<{ relType: EdgeRelationType; targetPath: string }> {
+	const cache = app.metadataCache.getFileCache(file);
+	if (!cache) return [];
+
+	const seen = new Map<string, EdgeRelationType>(); // targetPath → relType (dedup)
+
+	// 1. Wikilink-based frontmatter links — Obsidian resolves [[...]] natively
+	for (const fmLink of cache.frontmatterLinks ?? []) {
+		const relType = fieldLookup.get(fmLink.key.toLowerCase());
+		if (!relType) continue;
+		const resolved = app.metadataCache.getFirstLinkpathDest(fmLink.link, file.path)?.path;
+		if (resolved) seen.set(resolved, relType);
+	}
+
+	// 2. Plain note name frontmatter values — Excalibrain's native format
+	for (const [key, value] of Object.entries(cache.frontmatter ?? {})) {
+		const relType = fieldLookup.get(key.toLowerCase());
+		if (!relType) continue;
+		const rawNames: string[] = Array.isArray(value)
+			? (value as unknown[]).filter((v): v is string => typeof v === 'string')
+			: typeof value === 'string' ? [value] : [];
+		for (const name of rawNames) {
+			if (name.startsWith('[[')) continue; // already handled above
+			const stripped = name.replace(/^\[\[|\]\]$/g, '').trim();
+			if (!stripped) continue;
+			const resolved = app.metadataCache.getFirstLinkpathDest(stripped, file.path)?.path;
+			if (resolved && !seen.has(resolved)) seen.set(resolved, relType);
+		}
+	}
+
+	return [...seen.entries()].map(([targetPath, relType]) => ({ targetPath, relType }));
 }
 
 function detectRelationType(
@@ -228,20 +261,14 @@ function detectRelationType(
 	// Check source → target direction
 	const sourceFile = app.vault.getFileByPath(sourcePath);
 	if (sourceFile) {
-		for (const fmLink of getFrontmatterLinks(sourceFile, app)) {
-			const relType = fieldLookup.get(fmLink.key.toLowerCase());
-			if (!relType) continue;
-			const resolved = app.metadataCache.getFirstLinkpathDest(fmLink.link, sourcePath)?.path;
+		for (const { relType, targetPath: resolved } of getTypedFrontmatterLinks(sourceFile, app, fieldLookup)) {
 			if (resolved === targetPath) return relType;
 		}
 	}
 	// Check target → source direction (backlink carries inverse type)
 	const targetFile = app.vault.getFileByPath(targetPath);
 	if (targetFile) {
-		for (const fmLink of getFrontmatterLinks(targetFile, app)) {
-			const relType = fieldLookup.get(fmLink.key.toLowerCase());
-			if (!relType) continue;
-			const resolved = app.metadataCache.getFirstLinkpathDest(fmLink.link, targetPath)?.path;
+		for (const { relType, targetPath: resolved } of getTypedFrontmatterLinks(targetFile, app, fieldLookup)) {
 			if (resolved === sourcePath) return inverseType(relType);
 		}
 	}
