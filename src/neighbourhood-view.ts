@@ -79,15 +79,30 @@ export class NeighbourhoodGraphView extends ItemView {
 		}
 		if (this.excalibrainFields) {
 			legendBody.createDiv({ cls: 'ng-legend-divider' });
-			const edgeHints: Array<{ cls: string; text: string }> = [
-				{ cls: 'ng-edge-solid', text: 'Parent / child' },
-				{ cls: 'ng-edge-dashed', text: 'Friend' },
-				{ cls: 'ng-edge-dotted', text: 'Opposes' },
-				{ cls: 'ng-edge-dashdot', text: 'Previous / next' },
+			const edgeHints: Array<{ dash: string | null; text: string }> = [
+				{ dash: null,          text: 'Parent / child' },
+				{ dash: '5 3',         text: 'Friend' },
+				{ dash: '2 3',         text: 'Opposes' },
+				{ dash: '8 3 2 3',     text: 'Previous / next' },
 			];
+			const svgNS = 'http://www.w3.org/2000/svg';
 			for (const hint of edgeHints) {
 				const row = legendBody.createSpan({ cls: 'ng-legend-item' });
-				row.createSpan({ cls: hint.cls });
+				const svg = document.createElementNS(svgNS, 'svg');
+				svg.setAttribute('width', '20');
+				svg.setAttribute('height', '10');
+				svg.style.flexShrink = '0';
+				svg.style.verticalAlign = 'middle';
+				const line = document.createElementNS(svgNS, 'line');
+				line.setAttribute('x1', '0');
+				line.setAttribute('y1', '5');
+				line.setAttribute('x2', '20');
+				line.setAttribute('y2', '5');
+				line.setAttribute('stroke', 'currentColor');
+				line.setAttribute('stroke-width', '1.5');
+				if (hint.dash) line.setAttribute('stroke-dasharray', hint.dash);
+				svg.appendChild(line);
+				row.appendChild(svg);
 				row.appendText(` ${hint.text}`);
 			}
 		}

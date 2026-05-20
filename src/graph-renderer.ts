@@ -184,7 +184,7 @@ export class GraphRenderer {
 			.attr('width', '200%').attr('height', '200%');
 		filter.append('feGaussianBlur')
 			.attr('in', 'SourceGraphic')
-			.attr('stdDeviation', '2.5')
+			.attr('stdDeviation', '2.0')
 			.attr('result', 'blur');
 		const merge = filter.append('feMerge');
 		merge.append('feMergeNode').attr('in', 'blur');
@@ -243,6 +243,16 @@ export class GraphRenderer {
 				return dash ?? null;
 			});
 
+		// Transparent wide lines for edge hover detection (only typed edges show tooltips)
+		const linkHitArea = g.append('g')
+			.selectAll<SVGLineElement, SimEdge>('line')
+			.data(edges.filter((e) => !!e.relationType))
+			.join('line')
+			.attr('stroke', 'transparent')
+			.attr('stroke-width', 14)
+			.attr('fill', 'none')
+			.style('cursor', 'default');
+
 		const depth = this.settings.depth;
 
 		const highlightNode = (d: SimNode): void => {
@@ -282,12 +292,12 @@ export class GraphRenderer {
 				.attr('stroke', (e) => edgeLinkType(e) !== 'none' ? HIGHLIGHT_COLOUR : currentLineColour)
 				.attr('stroke-width', (e) => {
 					const t = edgeLinkType(e);
-					return t === 'primary' ? Math.max(currentLineWidth + 1.5, 2) :
+					return t === 'primary' ? Math.max(currentLineWidth + 1.0, 2) :
 						t === 'secondary' ? Math.max(currentLineWidth + 0.5, 1) : currentLineWidth;
 				})
 				.attr('stroke-opacity', (e) => {
 					const t = edgeLinkType(e);
-					return t === 'primary' ? 1 : t === 'secondary' ? 0.35 : 0.2;
+					return t === 'primary' ? 0.8 : t === 'secondary' ? 0.35 : 0.2;
 				})
 				.attr('filter', (e) => edgeLinkType(e) === 'primary' ? 'url(#nh-link-glow)' : null);
 
@@ -471,9 +481,39 @@ export class GraphRenderer {
 			})
 			.on('mouseout', () => tooltip.style('opacity', '0'));
 
+		// Edge hover tooltip — typed edges only
+		linkHitArea
+			.on('mouseover', (_, e) => {
+				if (!e.relationType) return;
+				const tooltipEl = tooltip.node() as HTMLElement;
+				tooltipEl.empty();
+				tooltipEl.createEl('span', {
+					text: RELATION_LABEL[e.relationType],
+					cls: 'neighbourhood-graph-tooltip-relation',
+				});
+				tooltip.style('opacity', '1');
+			})
+			.on('mousemove', (ev: MouseEvent) => {
+				const rect = this.container.getBoundingClientRect();
+				const tooltipEl = tooltip.node() as HTMLElement;
+				const tw = tooltipEl.offsetWidth;
+				const th = tooltipEl.offsetHeight || 30;
+				let left = ev.clientX - rect.left + 12;
+				let top = ev.clientY - rect.top - th - 16;
+				if (left + tw > rect.width) left = ev.clientX - rect.left - tw - 12;
+				if (top < 0) top = ev.clientY - rect.top + 24;
+				tooltip.style('left', `${left}px`).style('top', `${top}px`);
+			})
+			.on('mouseout', () => tooltip.style('opacity', '0'));
+
 		// Tick
 		this.simulation.on('tick', () => {
 			link
+				.attr('x1', (d) => (d.source as SimNode).x ?? 0)
+				.attr('y1', (d) => (d.source as SimNode).y ?? 0)
+				.attr('x2', (d) => (d.target as SimNode).x ?? 0)
+				.attr('y2', (d) => (d.target as SimNode).y ?? 0);
+			linkHitArea
 				.attr('x1', (d) => (d.source as SimNode).x ?? 0)
 				.attr('y1', (d) => (d.source as SimNode).y ?? 0)
 				.attr('x2', (d) => (d.target as SimNode).x ?? 0)
