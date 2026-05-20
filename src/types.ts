@@ -57,6 +57,8 @@ export interface NeighbourhoodGraphSettings {
 	showPathInTooltip: boolean;
 	/** Whether to read Excalibrain's relationship fields when Excalibrain is installed */
 	excalibrainEnabled: boolean;
+	/** Maximum radius (px) for the largest neighbour node. Focus node is 20% larger. */
+	maxNodeSize: number;
 }
 
 export const DEFAULT_SETTINGS: NeighbourhoodGraphSettings = {
@@ -71,4 +73,5 @@ export const DEFAULT_SETTINGS: NeighbourhoodGraphSettings = {
 	linkPull: 5,
 	showPathInTooltip: true,
 	excalibrainEnabled: true,
+	maxNodeSize: 10,
 };

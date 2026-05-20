@@ -1,10 +1,8 @@
 import * as d3 from 'd3';
 import type { GraphData, GraphNode, NeighbourhoodGraphSettings, ColourGroup, EdgeRelationType } from './types';
 
-const NOTE_R_MIN = 4;
-const NOTE_R_MAX = 20;
-const FOCUS_R = 20;
-const TAG_R = 6;
+// Radius bounds are computed from settings.maxNodeSize at render time
+const FOCUS_R_BONUS = 0.2;  // focus node is 20% larger than maxNodeSize
 const TAG_COLOUR = '#d4a017';
 const HIGHLIGHT_COLOUR = '#fbbf24';
 
@@ -63,38 +61,39 @@ function nodeRadius(node: SimNode): number {
 }
 
 /**
- * Scale note radii by connection strength, controlled by salienceImpact.
- *   0 = all same size (mid-range)
- *  10 = dramatic: weakest at 10% of max, strongest at max
- * Focus gets fixed max size.
+ * Scale note radii by connection strength, controlled by salienceImpact and maxNodeSize.
+ *   salienceImpact 0 = all same size.  10 = weakest at 10% of max, strongest at max.
+ * Radii are anchored to the displayed set so variation fills the full range regardless
+ * of how many nodes are hidden.
  */
-function computeRadii(nodes: SimNode[], salienceImpact: number): void {
+function computeRadii(nodes: SimNode[], settings: NeighbourhoodGraphSettings): void {
+	const noteRMax = settings.maxNodeSize;
+	const noteRMin = Math.max(2, Math.round(noteRMax * 0.2));
+	const focusR   = Math.round(noteRMax * (1 + FOCUS_R_BONUS));
+	const tagR     = Math.max(3, Math.round(noteRMax * 0.35));
+
 	const noteNodes = nodes.filter((n) => n.type === 'note' && !n.focus);
 	const strengths = noteNodes.map((n) => n.strength ?? 0);
-	// Anchor to the displayed set's own min/max so variation fills the full visual range
-	// regardless of how many nodes are hidden. Without this, high-strength nodes all
-	// cluster near the top of the scale and look similar.
 	const minStr = strengths.length > 0 ? Math.min(...strengths) : 0;
 	const maxStr = strengths.length > 0 ? Math.max(...strengths) : 1;
 	const range = maxStr - minStr;
 
-	// impact 0 → minR = maxR (uniform). impact 10 → minR = maxR * 0.1
-	const impactFactor = salienceImpact / 10;
-	const uniformR = (NOTE_R_MIN + NOTE_R_MAX) / 2;
-	const effectiveMin = NOTE_R_MAX - impactFactor * (NOTE_R_MAX - NOTE_R_MIN);
+	const impactFactor = settings.salienceImpact / 10;
+	const uniformR = (noteRMin + noteRMax) / 2;
+	const effectiveMin = noteRMax - impactFactor * (noteRMax - noteRMin);
 
 	for (const node of nodes) {
 		if (node.type !== 'note') {
-			node.r = TAG_R;
+			node.r = tagR;
 		} else if (node.focus) {
-			node.r = FOCUS_R;
+			node.r = focusR;
 		} else if (impactFactor === 0 || range === 0) {
 			node.r = uniformR;
 		} else {
 			const s = node.strength ?? 0;
 			const t = (s - minStr) / range;
 			const curved = Math.sqrt(t);
-			node.r = effectiveMin + curved * (NOTE_R_MAX - effectiveMin);
+			node.r = effectiveMin + curved * (noteRMax - effectiveMin);
 		}
 	}
 }
@@ -214,7 +213,9 @@ export class GraphRenderer {
 
 		const nodes: SimNode[] = data.nodes.map((n) => ({ ...n, r: 0 }));
 		const edges: SimEdge[] = data.edges.map((e) => ({ ...e }));
-		computeRadii(nodes, this.settings.salienceImpact);
+		computeRadii(nodes, this.settings);
+		const noteRMax = this.settings.maxNodeSize;
+		const noteRMin = Math.max(2, Math.round(noteRMax * 0.2));
 
 		this.simulation = d3.forceSimulation(nodes)
 			.force('link', d3.forceLink<SimNode, SimEdge>(edges)
@@ -286,14 +287,14 @@ export class GraphRenderer {
 				})
 				.attr('stroke-opacity', (e) => {
 					const t = edgeLinkType(e);
-					return t === 'primary' ? 1 : t === 'secondary' ? 0.25 : 0.12;
+					return t === 'primary' ? 1 : t === 'secondary' ? 0.35 : 0.2;
 				})
 				.attr('filter', (e) => edgeLinkType(e) === 'primary' ? 'url(#nh-link-glow)' : null);
 
 			node.attr('opacity', (n) => {
 				if (n.id === d.id || directIds.has(n.id)) return 1;
-				if (depth === 2 && secondaryIds.has(n.id)) return 0.6;
-				return 0.25;
+				if (depth === 2 && secondaryIds.has(n.id)) return 0.7;
+				return 0.35;
 			});
 		};
 
@@ -384,7 +385,8 @@ export class GraphRenderer {
 			.attr('font-size', (d) => {
 				if (d.focus) return '12px';
 				if (d.type !== 'note') return '9px';
-				return `${Math.round(8 + (d.r - NOTE_R_MIN) / (NOTE_R_MAX - NOTE_R_MIN) * 3)}px`;
+				const scale = noteRMax > noteRMin ? (d.r - noteRMin) / (noteRMax - noteRMin) : 0;
+				return `${Math.round(8 + scale * 3)}px`;
 			})
 			.attr('font-weight', (d) => d.focus ? '700' : '400')
 			.attr('fill', (d) => d.type === 'note' ? textColour : tagTextColour)

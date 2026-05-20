@@ -301,8 +301,31 @@ export class NeighbourhoodGraphView extends ItemView {
 		salienceInput.min = '0';
 		salienceInput.max = '10';
 		salienceInput.value = String(this.plugin.settings.salienceImpact);
-		salienceInput.addEventListener('input', async () => {
+		// input: track value only — no rebuild mid-drag
+		salienceInput.addEventListener('input', () => {
 			this.plugin.settings.salienceImpact = Number(salienceInput.value);
+		});
+		// change: fires on mouseup — safe to save and rebuild now
+		salienceInput.addEventListener('change', async () => {
+			await this.plugin.saveSettings();
+		});
+
+		// Max node size
+		const nodeSizeWrapper = panel.createDiv({ cls: 'ng-slider-wrapper' });
+		const nodeSizeLabelRow = nodeSizeWrapper.createDiv({ cls: 'ng-label-row' });
+		nodeSizeLabelRow.createEl('label', { text: 'Max node size', cls: 'ng-slider-label' });
+		const nodeSizeInfo = nodeSizeLabelRow.createEl('span', { cls: 'ng-info-icon', attr: {
+			'aria-label': 'Maximum radius of the largest neighbour node in pixels. Reduce for a compact sidebar view; increase for a full-panel view.',
+		}});
+		setIcon(nodeSizeInfo, 'info');
+		const nodeSizeInput = nodeSizeWrapper.createEl('input', { type: 'range', cls: 'ng-slider' });
+		nodeSizeInput.min = '4';
+		nodeSizeInput.max = '20';
+		nodeSizeInput.value = String(this.plugin.settings.maxNodeSize);
+		nodeSizeInput.addEventListener('input', () => {
+			this.plugin.settings.maxNodeSize = Number(nodeSizeInput.value);
+		});
+		nodeSizeInput.addEventListener('change', async () => {
 			await this.plugin.saveSettings();
 		});
 
@@ -322,11 +345,6 @@ export class NeighbourhoodGraphView extends ItemView {
 		];
 
 		const grid = panel.createDiv({ cls: 'ng-slider-grid' });
-		const updatePhysicsSetting = (key: 'lineColour' | 'lineThickness' | 'spread' | 'linkPull', val: number): void => {
-			this.plugin.settings[key] = val;
-			this.plugin.saveSettings();
-			if (this.renderer) this.renderer.updateSlider(key, val);
-		};
 		for (const s of sliders) {
 			const wrapper = grid.createDiv({ cls: 'ng-slider-wrapper' });
 			wrapper.createEl('label', { text: s.label, cls: 'ng-slider-label' });
@@ -336,8 +354,14 @@ export class NeighbourhoodGraphView extends ItemView {
 			input.value = String(this.plugin.settings[s.key]);
 
 			const key = s.key;
+			// input: drive the live simulation — no save, no rebuild
 			input.addEventListener('input', () => {
-				updatePhysicsSetting(key, Number(input.value));
+				if (this.renderer) this.renderer.updateSlider(key, Number(input.value));
+			});
+			// change: persist on mouseup — silent save, no rebuild needed
+			input.addEventListener('change', async () => {
+				this.plugin.settings[key] = Number(input.value);
+				await this.plugin.saveSettingsOnly();
 			});
 		}
 

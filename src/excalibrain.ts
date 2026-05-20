@@ -2,26 +2,58 @@ import type { App } from 'obsidian';
 import type { EdgeRelationType, ExcalibrainConfig } from './types';
 
 /**
+ * Excalibrain's built-in English defaults.
+ * Used when the plugin is installed but data.json doesn't exist yet
+ * (i.e. it has never been opened/configured).
+ */
+const EXCALIBRAIN_DEFAULTS: ExcalibrainConfig = {
+	parents:      ['Parent', 'Parents', 'up', 'North', 'origin', 'inception', 'source'],
+	children:     ['Children', 'Child', 'down', 'South', 'leads to', 'contributes to', 'nurtures'],
+	leftFriends:  ['Friends', 'Friend', 'similar', 'supports', 'alternatives', 'pros'],
+	rightFriends: ['opposes', 'disadvantages', 'cons'],
+	previous:     ['Previous', 'Prev', 'Before'],
+	next:         ['Next', 'After'],
+};
+
+export type ExcalibrainInstallState = 'not-installed' | 'installed-unconfigured' | 'configured';
+
+export async function getExcalibrainState(app: App): Promise<ExcalibrainInstallState> {
+	const mainJs  = `${app.vault.configDir}/plugins/excalibrain/main.js`;
+	const dataJson = `${app.vault.configDir}/plugins/excalibrain/data.json`;
+	if (!(await app.vault.adapter.exists(mainJs))) return 'not-installed';
+	if (!(await app.vault.adapter.exists(dataJson))) return 'installed-unconfigured';
+	return 'configured';
+}
+
+/**
  * Attempt to load Excalibrain's saved configuration.
- * Returns null if the plugin is not installed or has never been opened.
+ * Falls back to built-in English defaults when the plugin is installed but
+ * data.json doesn't exist yet (never been opened). Returns null only when
+ * the plugin is not installed at all.
  */
 export async function loadExcalibrainConfig(app: App): Promise<ExcalibrainConfig | null> {
-	const configPath = `${app.vault.configDir}/plugins/excalibrain/data.json`;
+	const mainJs   = `${app.vault.configDir}/plugins/excalibrain/main.js`;
+	const dataJson = `${app.vault.configDir}/plugins/excalibrain/data.json`;
+
+	if (!(await app.vault.adapter.exists(mainJs))) return null;
+
 	try {
-		const exists = await app.vault.adapter.exists(configPath);
-		if (!exists) return null;
-		const raw = await app.vault.adapter.read(configPath);
+		if (!(await app.vault.adapter.exists(dataJson))) {
+			// Installed but not yet configured — use built-in defaults
+			return EXCALIBRAIN_DEFAULTS;
+		}
+		const raw  = await app.vault.adapter.read(dataJson);
 		const data = JSON.parse(raw);
 		return {
-			parents: toStringArray(data.parents),
-			children: toStringArray(data.children),
-			leftFriends: toStringArray(data.leftFriends),
+			parents:      toStringArray(data.parents),
+			children:     toStringArray(data.children),
+			leftFriends:  toStringArray(data.leftFriends),
 			rightFriends: toStringArray(data.rightFriends),
-			previous: toStringArray(data.previous),
-			next: toStringArray(data.next),
+			previous:     toStringArray(data.previous),
+			next:         toStringArray(data.next),
 		};
 	} catch {
-		return null;
+		return EXCALIBRAIN_DEFAULTS;
 	}
 }
 

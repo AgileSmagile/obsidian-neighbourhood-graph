@@ -462,6 +462,11 @@
 	background: rgba(var(--color-green-rgb), 0.08);
 }
 
+.ng-excali-pending {
+	color: var(--color-yellow);
+	background: rgba(var(--color-yellow-rgb), 0.08);
+}
+
 .ng-excali-missing {
 	color: var(--text-muted);
 	background: var(--background-secondary);

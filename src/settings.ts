@@ -1,6 +1,7 @@
 import { PluginSettingTab, Setting, App, Notice, setIcon, ButtonComponent } from 'obsidian';
 import type NeighbourhoodGraphPlugin from './main';
 import type { ColourGroup } from './types';
+import { getExcalibrainState } from './excalibrain';
 
 const EXCALIBRAIN_PLUGIN_URL = 'https://obsidian.md/plugins?id=excalibrain';
 
@@ -64,6 +65,20 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 
 		// --- Display ---
 		this.containerEl.createEl('h3', { text: 'Display' });
+
+		new Setting(this.containerEl)
+			.setName('Max node size')
+			.setDesc('Maximum radius (px) of the largest neighbour node. Reduce for a compact sidebar; increase for a full-panel view. Default 10 is optimised for a narrow sidebar.')
+			.addSlider((slider) =>
+				slider
+					.setLimits(4, 20, 1)
+					.setValue(this.plugin.settings.maxNodeSize)
+					.setDynamicTooltip()
+					.onChange(async (val) => {
+						this.plugin.settings.maxNodeSize = val;
+						await this.plugin.saveSettings();
+					}),
+			);
 
 		new Setting(this.containerEl)
 			.setName('Show path in tooltip')
@@ -157,17 +172,51 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 	}
 
 	private async renderExcalibrainSection(container: HTMLElement): Promise<void> {
-		const mainJsPath = `${this.app.vault.configDir}/plugins/excalibrain/main.js`;
-		const isInstalled = await this.app.vault.adapter.exists(mainJsPath);
+		const state = await getExcalibrainState(this.app);
 
-		if (isInstalled) {
+		if (state === 'not-installed') {
+			const statusRow = container.createDiv({ cls: 'ng-excali-status ng-excali-missing' });
+			const icon = statusRow.createSpan({ cls: 'ng-excali-status-icon' });
+			setIcon(icon, 'info');
+			statusRow.createSpan({ text: 'Excalibrain is not installed' });
+
+			const desc = container.createEl('p', { cls: 'setting-item-description' });
+			desc.appendText('When Excalibrain is installed, this plugin reads its typed relationship fields (parent, child, friend, opposes, etc.) to draw distinct edge styles and weight connections more accurately. ');
+			const link = desc.createEl('a', { text: 'Get Excalibrain →', href: EXCALIBRAIN_PLUGIN_URL });
+			link.setAttr('target', '_blank');
+			link.setAttr('rel', 'noopener');
+
+		} else if (state === 'installed-unconfigured') {
+			const statusRow = container.createDiv({ cls: 'ng-excali-status ng-excali-pending' });
+			const icon = statusRow.createSpan({ cls: 'ng-excali-status-icon' });
+			setIcon(icon, 'clock');
+			statusRow.createSpan({ text: 'Excalibrain installed — using default fields' });
+
+			container.createEl('p', {
+				text: 'Excalibrain hasn\'t been opened yet so it has no saved configuration. This plugin is currently using Excalibrain\'s built-in English field names (Parent, Children, Friends, etc.). Open Excalibrain to generate its config and customise which fields map to which relationship types.',
+				cls: 'setting-item-description',
+			});
+
+			new Setting(container)
+				.setName('Use Excalibrain relationships')
+				.setDesc('Edges where source or target note has a matching frontmatter field will be styled distinctly and ranked higher.')
+				.addToggle((toggle) =>
+					toggle
+						.setValue(this.plugin.settings.excalibrainEnabled)
+						.onChange(async (val) => {
+							this.plugin.settings.excalibrainEnabled = val;
+							await this.plugin.saveSettings();
+						}),
+				);
+
+		} else {
 			const statusRow = container.createDiv({ cls: 'ng-excali-status ng-excali-found' });
 			const icon = statusRow.createSpan({ cls: 'ng-excali-status-icon' });
 			setIcon(icon, 'check-circle');
-			statusRow.createSpan({ text: 'Excalibrain is installed' });
+			statusRow.createSpan({ text: 'Excalibrain installed and configured' });
 
 			container.createEl('p', {
-				text: 'When enabled, this plugin reads the frontmatter fields Excalibrain uses for typed relationships (parent, child, friend, opposes, previous, next). Matching edges are drawn with distinct line styles, and explicitly typed links receive a strength bonus so they rank higher in the neighbourhood.',
+				text: 'Relationship fields from your Excalibrain configuration are active. Edges typed as parent/child draw as solid lines, friends as dashed, opposes as dotted, previous/next as dash-dot. Typed links also receive a strength bonus so they rank higher in the neighbourhood.',
 				cls: 'setting-item-description',
 			});
 
@@ -182,17 +231,6 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						}),
 				);
-		} else {
-			const statusRow = container.createDiv({ cls: 'ng-excali-status ng-excali-missing' });
-			const icon = statusRow.createSpan({ cls: 'ng-excali-status-icon' });
-			setIcon(icon, 'info');
-			statusRow.createSpan({ text: 'Excalibrain is not installed' });
-
-			const desc = container.createEl('p', { cls: 'setting-item-description' });
-			desc.appendText('When Excalibrain is installed, this plugin can read its typed relationship fields (parent, child, friend, opposes, etc.) to draw distinct edge styles and weight connections more accurately. ');
-			const link = desc.createEl('a', { text: 'Get Excalibrain →', href: EXCALIBRAIN_PLUGIN_URL });
-			link.setAttr('target', '_blank');
-			link.setAttr('rel', 'noopener');
 		}
 	}
 

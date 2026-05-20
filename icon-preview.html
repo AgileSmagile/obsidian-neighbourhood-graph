@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Neighbourhood Graph — Icon Options</title>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --bg-card: #2a2a3d;
+    --border: #3a3a52;
+    --text: #e5e7eb;
+    --text-muted: #9ca3af;
+    --accent: #7c6af7;
+    --accent-glow: rgba(124, 106, 247, 0.25);
+    --selected: #7c6af7;
+  }
+  [data-theme="light"] {
+    --bg: #f5f5f5;
+    --bg-card: #ffffff;
+    --border: #d1d5db;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --accent: #5b4de8;
+    --accent-glow: rgba(91, 77, 232, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 40px 32px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  h1 { font-size: 20px; font-weight: 600; }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+  }
+
+  .theme-toggle {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .theme-toggle:hover { color: var(--text); }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    margin-top: 32px;
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .card.selected {
+    border-color: var(--selected);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .icon-large {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .icon-large svg {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.5;
+  }
+
+  .icon-sizes {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    color: var(--text-muted);
+  }
+  .icon-sizes svg { stroke-width: 1.5; }
+  .icon-sizes .sz-sm { width: 16px; height: 16px; }
+  .icon-sizes .sz-md { width: 24px; height: 24px; }
+
+  .card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ---- Custom SVG icons ---- */
+
+  .custom-svg {
+    width: 48px;
+    height: 48px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Neighbourhood Graph — Icon Options</h1>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle light / dark</button>
+</header>
+<p class="subtitle">Click a card to mark your preference. Sizes shown: 16px sidebar tab · 48px preview.</p>
+
+<div class="section-label">Lucide library icons (available in Obsidian)</div>
+<div class="grid" id="icon-grid">
+
+  <div class="card" onclick="select(this)">
+    <div class="icon-large"><i data-lucide="map-pin"></i></div>
+    <div class="icon-sizes">
+      <i data-lucide="map-pin" class="sz-sm"></i>
+      <i data-lucide="map-pin" class="sz-md"></i>
+    </div>
+    <div class="card-name">map-pin</div>
+    <div class="card-desc">Locality — "you are here" centred on the current note</div>
+  </div>
+
+  <div class="card" onclick="select(this)">
+    <div class="icon-large"><i data-lucide="waypoints"></i></div>
+    <div class="icon-sizes">
+      <i data-lucide="waypoints" class="sz-sm"></i>
+      <i data-lucide="waypoints" class="sz-md"></i>
+    </div>
+    <div class="card-name">waypoints</div>
+    <div class="card-desc">Connected stops through a neighbourhood</div>
+  </div>
+
+  <div class="card" onclick="select(this)">
+    <div class="icon-large"><i data-lucide="focus"></i></div>
+    <div class="icon-sizes">
+      <i data-lucide="focus" class="sz-sm"></i>
+      <i data-lucide="focus" class="sz-md"></i>
+    </div>
+    <div class="card-name">focus</div>
+    <div class="card-desc">Centre-and-surroundings — literally what the plugin shows</div>
+  </div>
+
+  <div class="card" onclick="select(this)">
+    <div class="icon-large"><i data-lucide="radar"></i></div>
+    <div class="icon-sizes">
+      <i data-lucide="radar" class="sz-sm"></i>
+      <i data-lucide="radar" class="sz-md"></i>
+    </div>
+    <div class="card-name">radar</div>
+    <div class="card-desc">Scanning local area outward from a point</div>
+  </div>
+
+  <div class="card" onclick="select(this)">
+    <div class="icon-large"><i data-lucide="atom"></i></div>
+    <div class="icon-sizes">
+      <i data-lucide="atom" class="sz-sm"></i>
+      <i data-lucide="atom" class="sz-md"></i>
+    </div>
+    <div class="card-name">atom</div>
+    <div class="card-desc">Orbital connections around a nucleus</div>
+  </div>
+
+</div>
+
+<div class="section-label">Custom composed icons</div>
+<div class="grid">
+
+  <!-- Network icon (approximates Obsidian's graph view icon) -->
+  <div class="card" onclick="select(this)">
+    <div class="icon-large">
+      <!-- Network / graph — mimics the look of Obsidian's graph view icon -->
+      <svg class="custom-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="5"  r="2" />
+        <circle cx="5"  cy="18" r="2" />
+        <circle cx="19" cy="18" r="2" />
+        <circle cx="12" cy="13" r="1.5" />
+        <line x1="12" y1="7"    x2="12"  y2="11.5" stroke-width="1.5"/>
+        <line x1="6.4" y1="16.6" x2="10.9" y2="13.9" stroke-width="1.5"/>
+        <line x1="17.6" y1="16.6" x2="13.1" y2="13.9" stroke-width="1.5"/>
+        <line x1="6.2"  y1="16.4" x2="10.3" y2="6.6"  stroke-width="1"   stroke-opacity="0.45"/>
+        <line x1="17.8" y1="16.4" x2="13.7" y2="6.6"  stroke-width="1"   stroke-opacity="0.45"/>
+      </svg>
+    </div>
+    <div class="icon-sizes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-sm">
+        <circle cx="12" cy="5"  r="2" /><circle cx="5"  cy="18" r="2" /><circle cx="19" cy="18" r="2" />
+        <circle cx="12" cy="13" r="1.5" />
+        <line x1="12" y1="7" x2="12" y2="11.5" stroke-width="1.5"/>
+        <line x1="6.4" y1="16.6" x2="10.9" y2="13.9" stroke-width="1.5"/>
+        <line x1="17.6" y1="16.6" x2="13.1" y2="13.9" stroke-width="1.5"/>
+      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-md">
+        <circle cx="12" cy="5"  r="2" /><circle cx="5"  cy="18" r="2" /><circle cx="19" cy="18" r="2" />
+        <circle cx="12" cy="13" r="1.5" />
+        <line x1="12" y1="7" x2="12" y2="11.5" stroke-width="1.5"/>
+        <line x1="6.4" y1="16.6" x2="10.9" y2="13.9" stroke-width="1.5"/>
+        <line x1="17.6" y1="16.6" x2="13.1" y2="13.9" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="card-name">network (custom)</div>
+    <div class="card-desc">Approximates Obsidian's own graph view icon</div>
+  </div>
+
+  <!-- Network + magnifying glass -->
+  <div class="card" onclick="select(this)">
+    <div class="icon-large">
+      <svg class="custom-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Network nodes scaled ~0.72x, shifted up-left -->
+        <g transform="translate(-1.5, -2) scale(0.82)" transform-origin="0 0">
+          <circle cx="12" cy="5"  r="2.2"/>
+          <circle cx="5"  cy="18" r="2.2"/>
+          <circle cx="19" cy="18" r="2.2"/>
+          <circle cx="12" cy="13" r="1.7"/>
+          <line x1="12" y1="7.2"  x2="12"   y2="11.3" stroke-width="1.5"/>
+          <line x1="6.6" y1="16.5" x2="10.8" y2="13.8" stroke-width="1.5"/>
+          <line x1="17.4" y1="16.5" x2="13.2" y2="13.8" stroke-width="1.5"/>
+          <line x1="6.4"  y1="16.2" x2="10.3" y2="6.8"  stroke-width="1" stroke-opacity="0.4"/>
+          <line x1="17.6" y1="16.2" x2="13.7" y2="6.8"  stroke-width="1" stroke-opacity="0.4"/>
+        </g>
+        <!-- Magnifying glass — lower-right quadrant -->
+        <circle cx="17.5" cy="17.5" r="3.5" stroke-width="1.8"/>
+        <line x1="20.1" y1="20.1" x2="22.5" y2="22.5" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="icon-sizes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-sm">
+        <g transform="translate(-1.5, -2) scale(0.82)" transform-origin="0 0">
+          <circle cx="12" cy="5"  r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/>
+          <circle cx="12" cy="13" r="1.7"/>
+          <line x1="12" y1="7.2" x2="12" y2="11.3" stroke-width="1.5"/>
+          <line x1="6.6" y1="16.5" x2="10.8" y2="13.8" stroke-width="1.5"/>
+          <line x1="17.4" y1="16.5" x2="13.2" y2="13.8" stroke-width="1.5"/>
+        </g>
+        <circle cx="17.5" cy="17.5" r="3.5" stroke-width="1.8"/>
+        <line x1="20.1" y1="20.1" x2="22.5" y2="22.5" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-md">
+        <g transform="translate(-1.5, -2) scale(0.82)" transform-origin="0 0">
+          <circle cx="12" cy="5"  r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/>
+          <circle cx="12" cy="13" r="1.7"/>
+          <line x1="12" y1="7.2" x2="12" y2="11.3" stroke-width="1.5"/>
+          <line x1="6.6" y1="16.5" x2="10.8" y2="13.8" stroke-width="1.5"/>
+          <line x1="17.4" y1="16.5" x2="13.2" y2="13.8" stroke-width="1.5"/>
+        </g>
+        <circle cx="17.5" cy="17.5" r="3.5" stroke-width="1.8"/>
+        <line x1="20.1" y1="20.1" x2="22.5" y2="22.5" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="card-name">network + magnifier</div>
+    <div class="card-desc">"Zooming into a specific part of the graph"</div>
+  </div>
+
+  <!-- scope + cluster (original 5-node version) -->
+  <div class="card" onclick="select(this)">
+    <div class="icon-large">
+      <svg class="custom-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9" stroke-width="1.2" stroke-opacity="0.5"/>
+        <line x1="12" y1="3"  x2="12" y2="6"  stroke-width="1.5"/>
+        <line x1="12" y1="18" x2="12" y2="21" stroke-width="1.5"/>
+        <line x1="3"  y1="12" x2="6"  y2="12" stroke-width="1.5"/>
+        <line x1="18" y1="12" x2="21" y2="12" stroke-width="1.5"/>
+        <circle cx="12" cy="12" r="2.2" stroke-width="1.8"/>
+        <circle cx="8"  cy="9"  r="1.4" stroke-width="1.5"/>
+        <circle cx="16" cy="9"  r="1.4" stroke-width="1.5"/>
+        <circle cx="9"  cy="16" r="1.4" stroke-width="1.5"/>
+        <circle cx="15" cy="16" r="1.4" stroke-width="1.5"/>
+        <line x1="10.1" y1="10.6" x2="9.2"  y2="10.0" stroke-width="1.2"/>
+        <line x1="13.9" y1="10.6" x2="14.8" y2="10.0" stroke-width="1.2"/>
+        <line x1="10.5" y1="13.5" x2="9.7"  y2="14.7" stroke-width="1.2"/>
+        <line x1="13.5" y1="13.5" x2="14.3" y2="14.7" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="icon-sizes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-sm">
+        <circle cx="12" cy="12" r="9" stroke-width="1.2" stroke-opacity="0.5"/>
+        <line x1="12" y1="3" x2="12" y2="6" stroke-width="1.5"/><line x1="12" y1="18" x2="12" y2="21" stroke-width="1.5"/>
+        <line x1="3" y1="12" x2="6" y2="12" stroke-width="1.5"/><line x1="18" y1="12" x2="21" y2="12" stroke-width="1.5"/>
+        <circle cx="12" cy="12" r="2.2" stroke-width="1.8"/>
+        <circle cx="8" cy="9" r="1.4" stroke-width="1.5"/><circle cx="16" cy="9" r="1.4" stroke-width="1.5"/>
+        <circle cx="9" cy="16" r="1.4" stroke-width="1.5"/><circle cx="15" cy="16" r="1.4" stroke-width="1.5"/>
+      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-md">
+        <circle cx="12" cy="12" r="9" stroke-width="1.2" stroke-opacity="0.5"/>
+        <line x1="12" y1="3" x2="12" y2="6" stroke-width="1.5"/><line x1="12" y1="18" x2="12" y2="21" stroke-width="1.5"/>
+        <line x1="3" y1="12" x2="6" y2="12" stroke-width="1.5"/><line x1="18" y1="12" x2="21" y2="12" stroke-width="1.5"/>
+        <circle cx="12" cy="12" r="2.2" stroke-width="1.8"/>
+        <circle cx="8" cy="9" r="1.4" stroke-width="1.5"/><circle cx="16" cy="9" r="1.4" stroke-width="1.5"/>
+        <circle cx="9" cy="16" r="1.4" stroke-width="1.5"/><circle cx="15" cy="16" r="1.4" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="card-name">scope + cluster</div>
+    <div class="card-desc">Neighbourhood nodes inside a targeting reticle</div>
+  </div>
+
+  <!-- scope + 3 satellites v3 — satellites pushed to ring edge, neighbour-to-neighbour link visible -->
+  <div class="card" onclick="select(this)">
+    <div class="icon-large">
+      <svg class="custom-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Ring r=10.5, fills viewBox -->
+        <circle cx="12" cy="12" r="10.5" stroke-width="1.2" stroke-opacity="0.65"/>
+        <!-- Crosshair ticks -->
+        <line x1="12" y1="0.5" x2="12" y2="2"    stroke-width="1.3"/>
+        <line x1="12" y1="22"  x2="12" y2="23.5"  stroke-width="1.3"/>
+        <line x1="0.5" y1="12" x2="2"   y2="12"   stroke-width="1.3"/>
+        <line x1="22"  y1="12" x2="23.5" y2="12"  stroke-width="1.3"/>
+        <!-- Central focus node -->
+        <circle cx="12" cy="12" r="2" stroke-width="1.6"/>
+        <!-- 3 satellites at r=7 from centre, 120° apart (top, lower-left, lower-right) -->
+        <circle cx="12"   cy="5"    r="1.3" stroke-width="1.1"/>
+        <circle cx="5.9"  cy="15.5" r="1.3" stroke-width="1.1"/>
+        <circle cx="18.1" cy="15.5" r="1.3" stroke-width="1.1"/>
+        <!-- Spokes: centre → each satellite (gap between node edges) -->
+        <line x1="12"   y1="10"   x2="12"   y2="6.3"  stroke-width="1.0"/>
+        <line x1="10.3" y1="13.0" x2="7.1"  y2="14.8" stroke-width="1.0"/>
+        <line x1="13.7" y1="13.0" x2="16.9" y2="14.8" stroke-width="1.0"/>
+        <!-- Neighbour-to-neighbour link: lower-left ↔ lower-right -->
+        <line x1="7.2"  y1="15.5" x2="16.8" y2="15.5" stroke-width="1.0"/>
+      </svg>
+    </div>
+    <div class="icon-sizes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-sm">
+        <circle cx="12" cy="12" r="10.5" stroke-width="1.2" stroke-opacity="0.65"/>
+        <line x1="12" y1="0.5" x2="12" y2="2"   stroke-width="1.3"/>
+        <line x1="12" y1="22"  x2="12" y2="23.5" stroke-width="1.3"/>
+        <line x1="0.5" y1="12" x2="2"   y2="12"  stroke-width="1.3"/>
+        <line x1="22"  y1="12" x2="23.5" y2="12" stroke-width="1.3"/>
+        <circle cx="12"   cy="12"   r="2"   stroke-width="1.6"/>
+        <circle cx="12"   cy="5"    r="1.3" stroke-width="1.1"/>
+        <circle cx="5.9"  cy="15.5" r="1.3" stroke-width="1.1"/>
+        <circle cx="18.1" cy="15.5" r="1.3" stroke-width="1.1"/>
+        <line x1="12"   y1="10"   x2="12"   y2="6.3"  stroke-width="1.0"/>
+        <line x1="10.3" y1="13.0" x2="7.1"  y2="14.8" stroke-width="1.0"/>
+        <line x1="13.7" y1="13.0" x2="16.9" y2="14.8" stroke-width="1.0"/>
+        <line x1="7.2"  y1="15.5" x2="16.8" y2="15.5" stroke-width="1.0"/>
+      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="sz-md">
+        <circle cx="12" cy="12" r="10.5" stroke-width="1.2" stroke-opacity="0.65"/>
+        <line x1="12" y1="0.5" x2="12" y2="2"   stroke-width="1.3"/>
+        <line x1="12" y1="22"  x2="12" y2="23.5" stroke-width="1.3"/>
+        <line x1="0.5" y1="12" x2="2"   y2="12"  stroke-width="1.3"/>
+        <line x1="22"  y1="12" x2="23.5" y2="12" stroke-width="1.3"/>
+        <circle cx="12"   cy="12"   r="2"   stroke-width="1.6"/>
+        <circle cx="12"   cy="5"    r="1.3" stroke-width="1.1"/>
+        <circle cx="5.9"  cy="15.5" r="1.3" stroke-width="1.1"/>
+        <circle cx="18.1" cy="15.5" r="1.3" stroke-width="1.1"/>
+        <line x1="12"   y1="10"   x2="12"   y2="6.3"  stroke-width="1.0"/>
+        <line x1="10.3" y1="13.0" x2="7.1"  y2="14.8" stroke-width="1.0"/>
+        <line x1="13.7" y1="13.0" x2="16.9" y2="14.8" stroke-width="1.0"/>
+        <line x1="7.2"  y1="15.5" x2="16.8" y2="15.5" stroke-width="1.0"/>
+      </svg>
+    </div>
+    <div class="card-name">scope + 3 satellites v3</div>
+    <div class="card-desc">Satellites at ring edge, spokes to centre, one neighbour-to-neighbour link</div>
+  </div>
+
+</div>
+
+<p style="font-size:11px; color:var(--text-muted); margin-top:32px;">
+  Lucide icons labelled with <code>waypoints</code>, <code>radar</code> are newer additions — verify they render in your Obsidian version before committing.
+  The custom icons use the same stroke-based approach as Lucide and will honour Obsidian's theme colour.
+</p>
+
+<script>
+  lucide.createIcons();
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.dataset.theme = html.dataset.theme === 'light' ? '' : 'light';
+  }
+
+  function select(card) {
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+  }
+</script>
+</body>
+</html>
