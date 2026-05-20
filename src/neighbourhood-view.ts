@@ -93,11 +93,12 @@ export class NeighbourhoodGraphView extends ItemView {
 			this._legendEdgeLines = [];
 			for (const hint of edgeHints) {
 				const row = legendBody.createSpan({ cls: 'ng-legend-item' });
-				const svg = document.createElementNS(svgNS, 'svg');
+				const svg = document.createElementNS(svgNS, 'svg') as SVGSVGElement;
 				svg.setAttribute('width', '20');
 				svg.setAttribute('height', '10');
+				svg.setAttribute('viewBox', '0 0 20 10');
+				svg.style.display = 'block';
 				svg.style.flexShrink = '0';
-				svg.style.verticalAlign = 'middle';
 				const line = document.createElementNS(svgNS, 'line') as SVGLineElement;
 				line.setAttribute('x1', '0');
 				line.setAttribute('y1', '5');
@@ -108,7 +109,9 @@ export class NeighbourhoodGraphView extends ItemView {
 				if (hint.dash) line.setAttribute('stroke-dasharray', hint.dash);
 				svg.appendChild(line);
 				row.appendChild(svg);
-				row.appendText(` ${hint.text}`);
+				// Use createSpan (Obsidian API) rather than appendText — mixing native
+				// appendChild with appendText on the same element drops the text node.
+				row.createSpan({ text: hint.text });
 				this._legendEdgeLines.push(line);
 			}
 		}
