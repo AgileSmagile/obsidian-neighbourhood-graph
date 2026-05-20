@@ -8,9 +8,27 @@ export interface GraphNode {
 	strength?: number;
 }
 
+export type EdgeRelationType = 'parent' | 'child' | 'leftFriend' | 'rightFriend' | 'previous' | 'next';
+
 export interface GraphEdge {
 	source: string;
 	target: string;
+	/** Set when the link was declared via an Excalibrain relationship field */
+	relationType?: EdgeRelationType;
+}
+
+/**
+ * Subset of Excalibrain's data.json that we care about.
+ * Each array contains the frontmatter field names the user has mapped
+ * to that relationship type (case-insensitive at match time).
+ */
+export interface ExcalibrainConfig {
+	parents: string[];
+	children: string[];
+	leftFriends: string[];
+	rightFriends: string[];
+	previous: string[];
+	next: string[];
 }
 
 export interface GraphData {
@@ -37,6 +55,8 @@ export interface NeighbourhoodGraphSettings {
 	spread: number;
 	linkPull: number;
 	showPathInTooltip: boolean;
+	/** Whether to read Excalibrain's relationship fields when Excalibrain is installed */
+	excalibrainEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: NeighbourhoodGraphSettings = {
@@ -50,4 +70,5 @@ export const DEFAULT_SETTINGS: NeighbourhoodGraphSettings = {
 	spread: 5,
 	linkPull: 5,
 	showPathInTooltip: true,
+	excalibrainEnabled: true,
 };

@@ -1,5 +1,5 @@
 import type { App, TFile } from 'obsidian';
-import type { GraphData, GraphNode, GraphEdge, NeighbourhoodGraphSettings } from './types';
+import type { GraphData, GraphNode, GraphEdge, NeighbourhoodGraphSettings, EdgeRelationType } from './types';
 
 /**
  * Build a neighbourhood subgraph centred on the focus file.
@@ -10,10 +10,21 @@ import type { GraphData, GraphNode, GraphEdge, NeighbourhoodGraphSettings } from
  * Neighbours are ranked by connection strength (shared tags + direct links)
  * and capped at maxNeighbours.
  */
+/** Strength bonus added per explicit Excalibrain relationship type */
+const RELATION_STRENGTH_BONUS: Record<EdgeRelationType, number> = {
+	parent: 3,
+	child: 3,
+	leftFriend: 1,
+	rightFriend: 1,
+	previous: 1,
+	next: 1,
+};
+
 export function buildNeighbourhood(
 	focusFile: TFile,
 	app: App,
 	settings: NeighbourhoodGraphSettings,
+	excalibrainFields: Map<string, EdgeRelationType> | null = null,
 ): GraphData {
 	const vault = app.vault;
 	const allFiles = vault.getMarkdownFiles();
@@ -102,6 +113,32 @@ export function buildNeighbourhood(
 		neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + hubScore);
 	}
 
+	// Excalibrain bonus: explicit typed relationships carry more weight than plain links
+	if (excalibrainFields) {
+		// Check focus note's frontmatter for outbound typed links
+		for (const fmLink of getFrontmatterLinks(focusFile, app)) {
+			const relType = excalibrainFields.get(fmLink.key.toLowerCase());
+			if (!relType) continue;
+			const targetPath = app.metadataCache.getFirstLinkpathDest(fmLink.link, focusFile.path)?.path;
+			if (targetPath && neighbourStrength.has(targetPath)) {
+				neighbourStrength.set(targetPath, (neighbourStrength.get(targetPath) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
+			}
+		}
+		// Check each potential neighbour's frontmatter for typed links back to focus
+		for (const [notePath] of neighbourStrength) {
+			const file = app.vault.getFileByPath(notePath);
+			if (!file) continue;
+			for (const fmLink of getFrontmatterLinks(file, app)) {
+				const relType = excalibrainFields.get(fmLink.key.toLowerCase());
+				if (!relType) continue;
+				const targetPath = app.metadataCache.getFirstLinkpathDest(fmLink.link, notePath)?.path;
+				if (targetPath === focusFile.path) {
+					neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
+				}
+			}
+		}
+	}
+
 	// Sort by strength (highest first) and cap
 	const sorted = [...neighbourStrength.entries()]
 		.sort((a, b) => b[1] - a[1]);
@@ -154,11 +191,13 @@ export function buildNeighbourhood(
 		}
 	}
 
-	// Add direct link edges between focus and backlink neighbours
+	// Add direct link edges between focus and neighbours, typed where Excalibrain fields match
 	for (const linkedPath of focusAllLinks) {
-		if (neighbourSet.has(linkedPath)) {
-			addEdge(focusFile.path, linkedPath);
-		}
+		if (!neighbourSet.has(linkedPath)) continue;
+		const relType = excalibrainFields
+			? detectRelationType(focusFile.path, linkedPath, app, excalibrainFields)
+			: undefined;
+		addEdge(focusFile.path, linkedPath, relType);
 	}
 
 	return {
@@ -167,12 +206,55 @@ export function buildNeighbourhood(
 		truncated: truncated > 0 ? truncated : undefined,
 	};
 
-	function addEdge(source: string, target: string): void {
+	function addEdge(source: string, target: string, relationType?: EdgeRelationType): void {
 		const key = `${source}\u2192${target}`;
 		const reverseKey = `${target}\u2192${source}`;
 		if (edgeSet.has(key) || edgeSet.has(reverseKey)) return;
 		edgeSet.add(key);
-		edges.push({ source, target });
+		edges.push(relationType ? { source, target, relationType } : { source, target });
+	}
+}
+
+function getFrontmatterLinks(file: TFile, app: App): Array<{ key: string; link: string }> {
+	return app.metadataCache.getFileCache(file)?.frontmatterLinks ?? [];
+}
+
+function detectRelationType(
+	sourcePath: string,
+	targetPath: string,
+	app: App,
+	fieldLookup: Map<string, EdgeRelationType>,
+): EdgeRelationType | undefined {
+	// Check source → target direction
+	const sourceFile = app.vault.getFileByPath(sourcePath);
+	if (sourceFile) {
+		for (const fmLink of getFrontmatterLinks(sourceFile, app)) {
+			const relType = fieldLookup.get(fmLink.key.toLowerCase());
+			if (!relType) continue;
+			const resolved = app.metadataCache.getFirstLinkpathDest(fmLink.link, sourcePath)?.path;
+			if (resolved === targetPath) return relType;
+		}
+	}
+	// Check target → source direction (backlink carries inverse type)
+	const targetFile = app.vault.getFileByPath(targetPath);
+	if (targetFile) {
+		for (const fmLink of getFrontmatterLinks(targetFile, app)) {
+			const relType = fieldLookup.get(fmLink.key.toLowerCase());
+			if (!relType) continue;
+			const resolved = app.metadataCache.getFirstLinkpathDest(fmLink.link, targetPath)?.path;
+			if (resolved === sourcePath) return inverseType(relType);
+		}
+	}
+	return undefined;
+}
+
+function inverseType(type: EdgeRelationType): EdgeRelationType {
+	switch (type) {
+		case 'parent': return 'child';
+		case 'child': return 'parent';
+		case 'previous': return 'next';
+		case 'next': return 'previous';
+		default: return type; // friends/opposes are symmetric
 	}
 }
 

@@ -2,6 +2,8 @@ import { ItemView, WorkspaceLeaf, Setting, Notice, type TFile, debounce, setIcon
 import type NeighbourhoodGraphPlugin from './main';
 import { buildNeighbourhood } from './graph-data';
 import { GraphRenderer } from './graph-renderer';
+import { loadExcalibrainConfig, buildFieldLookup } from './excalibrain';
+import type { EdgeRelationType } from './types';
 
 export const VIEW_TYPE = 'neighbourhood-graph';
 
@@ -11,6 +13,7 @@ export class NeighbourhoodGraphView extends ItemView {
 	private graphContainer: HTMLElement | null = null;
 	private settingsPanel: HTMLElement | null = null;
 	private focusFile: TFile | null = null;
+	private excalibrainFields: Map<string, EdgeRelationType> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: NeighbourhoodGraphPlugin) {
 		super(leaf);
@@ -26,10 +29,12 @@ export class NeighbourhoodGraphView extends ItemView {
 	}
 
 	getIcon(): string {
-		return 'git-fork';
+		return 'neighbourhood-graph-icon';
 	}
 
 	async onOpen(): Promise<void> {
+		await this.refreshExcalibrainFields();
+
 		const container = this.contentEl;
 		container.empty();
 		container.addClass('neighbourhood-graph-container');
@@ -72,6 +77,21 @@ export class NeighbourhoodGraphView extends ItemView {
 			if (item.shape) row.createSpan({ cls: item.shape });
 			row.appendText(` ${item.text}`);
 		}
+		if (this.excalibrainFields) {
+			legendBody.createDiv({ cls: 'ng-legend-divider' });
+			const edgeHints: Array<{ cls: string; text: string }> = [
+				{ cls: 'ng-edge-solid', text: 'Parent / child' },
+				{ cls: 'ng-edge-dashed', text: 'Friend' },
+				{ cls: 'ng-edge-dotted', text: 'Opposes' },
+				{ cls: 'ng-edge-dashdot', text: 'Previous / next' },
+			];
+			for (const hint of edgeHints) {
+				const row = legendBody.createSpan({ cls: 'ng-legend-item' });
+				row.createSpan({ cls: hint.cls });
+				row.appendText(` ${hint.text}`);
+			}
+		}
+
 		legendBody.createDiv({ cls: 'ng-legend-divider' });
 		for (const hint of ['Click = centre on', 'Double-click = open']) {
 			legendBody.createSpan({ cls: 'ng-legend-item', text: hint });
@@ -170,8 +190,22 @@ export class NeighbourhoodGraphView extends ItemView {
 	}
 
 	onSettingsChanged(): void {
+		void this.reloadAndRebuild();
+	}
+
+	private async reloadAndRebuild(): Promise<void> {
+		await this.refreshExcalibrainFields();
 		this.buildSettingsPanel();
 		this.rebuild();
+	}
+
+	private async refreshExcalibrainFields(): Promise<void> {
+		if (!this.plugin.settings.excalibrainEnabled) {
+			this.excalibrainFields = null;
+			return;
+		}
+		const config = await loadExcalibrainConfig(this.app);
+		this.excalibrainFields = config ? buildFieldLookup(config) : null;
 	}
 
 	recentreOn(filePath: string): void {
@@ -184,7 +218,7 @@ export class NeighbourhoodGraphView extends ItemView {
 	private rebuild(): void {
 		if (!this.focusFile || !this.graphContainer) return;
 
-		const data = buildNeighbourhood(this.focusFile, this.app, this.plugin.settings);
+		const data = buildNeighbourhood(this.focusFile, this.app, this.plugin.settings, this.excalibrainFields);
 
 		// Remove truncation indicator from previous render
 		const oldTruncated = this.graphContainer.querySelector('.ng-truncated');
@@ -253,17 +287,6 @@ export class NeighbourhoodGraphView extends ItemView {
 					});
 			}));
 
-		this.addSettingWithInfo(panel, 'Show path in tooltip',
-			'When hovering a note, show its vault folder path below the title.',
-			(s) => s.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.showPathInTooltip)
-					.onChange(async (val) => {
-						this.plugin.settings.showPathInTooltip = val;
-						await this.plugin.saveSettings();
-					}),
-			));
-
 		// Display section
 		panel.createEl('div', { text: 'Display', cls: 'ng-section-label' });
 
@@ -318,32 +341,22 @@ export class NeighbourhoodGraphView extends ItemView {
 			});
 		}
 
-		// Colour groups — import button + link to settings
-		panel.createEl('div', { text: 'Colour groups', cls: 'ng-section-label' });
-
-		const groupCount = this.plugin.settings.colourGroups.length;
-		if (groupCount > 0) {
-			panel.createEl('p', {
-				text: `${groupCount} group${groupCount === 1 ? '' : 's'} configured. Edit in plugin settings.`,
-				cls: 'ng-panel-hint',
-			});
-		} else {
-			panel.createEl('p', {
-				text: 'No colour groups set. Import or configure in plugin settings.',
-				cls: 'ng-panel-hint',
-			});
-		}
+		// Content & display — signpost to plugin settings
+		panel.createEl('div', { text: 'Content & display', cls: 'ng-section-label' });
+		panel.createEl('p', {
+			text: 'Colour groups, tooltip options, and Excalibrain integration are in plugin settings.',
+			cls: 'ng-panel-hint',
+		});
 
 		const btnRow = panel.createDiv({ cls: 'ng-btn-row' });
 
-		const importBtn = btnRow.createEl('button', { text: 'Import from graph view', cls: 'ng-import-btn' });
+		const importBtn = btnRow.createEl('button', { text: 'Import colours', cls: 'ng-import-btn' });
 		importBtn.addEventListener('click', async () => {
 			await this.importColourGroups();
 		});
 
 		const settingsBtn = btnRow.createEl('button', { text: 'Open settings', cls: 'ng-import-btn' });
 		settingsBtn.addEventListener('click', () => {
-			// Open plugin's settings tab via Obsidian's internal settings API
 			const appSetting = (this.app as unknown as Record<string, unknown>).setting as
 				{ open(): void; openTabById(id: string): void } | undefined;
 			if (appSetting) {

@@ -353,12 +353,88 @@
 	font-size: var(--font-ui-smaller);
 }
 
+.neighbourhood-graph-tooltip-relation {
+	font-size: var(--font-ui-smaller);
+	color: var(--interactive-accent);
+	font-style: italic;
+}
+
+/* Excalibrain status row in plugin settings */
+.ng-excali-status {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	margin-bottom: 8px;
+	padding: 6px 10px;
+	border-radius: var(--radius-s);
+}
+
+.ng-excali-status-icon {
+	display: flex;
+	align-items: center;
+}
+
+.ng-excali-status-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.ng-excali-found {
+	color: var(--color-green);
+	background: rgba(var(--color-green-rgb), 0.08);
+}
+
+.ng-excali-missing {
+	color: var(--text-muted);
+	background: var(--background-secondary);
+}
+
+/* Edge type legend swatches (shown only when Excalibrain integration is active) */
+.ng-edge-solid,
+.ng-edge-dashed,
+.ng-edge-dotted,
+.ng-edge-dashdot {
+	display: inline-block;
+	width: 16px;
+	height: 2px;
+	background: var(--text-muted);
+	vertical-align: middle;
+	flex-shrink: 0;
+}
+
+.ng-edge-dashed {
+	background: repeating-linear-gradient(
+		to right,
+		var(--text-muted) 0px, var(--text-muted) 5px,
+		transparent 5px, transparent 8px
+	);
+}
+
+.ng-edge-dotted {
+	background: repeating-linear-gradient(
+		to right,
+		var(--text-muted) 0px, var(--text-muted) 2px,
+		transparent 2px, transparent 5px
+	);
+}
+
+.ng-edge-dashdot {
+	background: repeating-linear-gradient(
+		to right,
+		var(--text-muted) 0px, var(--text-muted) 8px,
+		transparent 8px, transparent 11px,
+		var(--text-muted) 11px, var(--text-muted) 13px,
+		transparent 13px, transparent 16px
+	);
+}
+
 /* Truncation indicator */
 .ng-truncated {
 	position: absolute;
-	bottom: 30px;
-	left: 50%;
-	transform: translateX(-50%);
+	bottom: 8px;
+	left: 8px;
 	font-size: 10px;
 	color: var(--text-muted);
 	background: var(--background-primary-alt);

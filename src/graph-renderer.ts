@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import type { GraphData, GraphNode, NeighbourhoodGraphSettings, ColourGroup } from './types';
+import type { GraphData, GraphNode, NeighbourhoodGraphSettings, ColourGroup, EdgeRelationType } from './types';
 
 const NOTE_R_MIN = 4;
 const NOTE_R_MAX = 20;
@@ -15,7 +15,26 @@ interface SimNode extends GraphNode, d3.SimulationNodeDatum {
 interface SimEdge extends d3.SimulationLinkDatum<SimNode> {
 	source: SimNode | string;
 	target: SimNode | string;
+	relationType?: EdgeRelationType;
 }
+
+const RELATION_DASH: Record<EdgeRelationType, string | null> = {
+	parent:      null,        // solid — structural hierarchy
+	child:       null,        // solid — structural hierarchy
+	leftFriend:  '5 3',       // dashed — lateral association
+	rightFriend: '2 3',       // dotted — opposing/contrast
+	previous:    '8 3 2 3',   // dash-dot — sequential
+	next:        '8 3 2 3',   // dash-dot — sequential
+};
+
+const RELATION_LABEL: Record<EdgeRelationType, string> = {
+	parent:      'parent of',
+	child:       'child of',
+	leftFriend:  'friend',
+	rightFriend: 'opposes',
+	previous:    'previous',
+	next:        'next',
+};
 
 export interface RendererCallbacks {
 	onNodeClick: (nodeId: string) => void;
@@ -52,8 +71,11 @@ function nodeRadius(node: SimNode): number {
 function computeRadii(nodes: SimNode[], salienceImpact: number): void {
 	const noteNodes = nodes.filter((n) => n.type === 'note' && !n.focus);
 	const strengths = noteNodes.map((n) => n.strength ?? 0);
-	const minStr = Math.min(...strengths, 0);
-	const maxStr = Math.max(...strengths, 1);
+	// Anchor to the displayed set's own min/max so variation fills the full visual range
+	// regardless of how many nodes are hidden. Without this, high-strength nodes all
+	// cluster near the top of the scale and look similar.
+	const minStr = strengths.length > 0 ? Math.min(...strengths) : 0;
+	const maxStr = strengths.length > 0 ? Math.max(...strengths) : 1;
 	const range = maxStr - minStr;
 
 	// impact 0 → minR = maxR (uniform). impact 10 → minR = maxR * 0.1
@@ -214,7 +236,11 @@ export class GraphRenderer {
 			.join('line')
 			.attr('stroke', initLineColour)
 			.attr('stroke-width', initLineWidth)
-			.attr('stroke-opacity', 0.9);
+			.attr('stroke-opacity', 0.9)
+			.attr('stroke-dasharray', (e) => {
+				const dash = e.relationType ? RELATION_DASH[e.relationType] : null;
+				return dash ?? null;
+			});
 
 		const depth = this.settings.depth;
 
@@ -276,6 +302,10 @@ export class GraphRenderer {
 				.attr('stroke', currentLineColour)
 				.attr('stroke-width', currentLineWidth)
 				.attr('stroke-opacity', 0.9)
+				.attr('stroke-dasharray', (e) => {
+					const dash = e.relationType ? RELATION_DASH[e.relationType] : null;
+					return dash ?? null;
+				})
 				.attr('filter', null);
 			node.attr('opacity', 1);
 		};
@@ -384,14 +414,36 @@ export class GraphRenderer {
 
 		const showPath = this.settings.showPathInTooltip;
 
+		// Build a quick lookup: nodeId → relationship type for edges touching the focus node.
+		// Constructed after simulation starts so source/target may already be resolved objects.
+		const focusRelation = new Map<string, EdgeRelationType>();
+		const focusNode = nodes.find((n) => n.focus);
+		if (focusNode) {
+			for (const e of edges) {
+				if (!e.relationType) continue;
+				const srcId = getEdgeNodeId(e.source);
+				const tgtId = getEdgeNodeId(e.target);
+				if (srcId === focusNode.id) focusRelation.set(tgtId, e.relationType);
+				if (tgtId === focusNode.id) focusRelation.set(srcId, e.relationType);
+			}
+		}
+
 		node
 			.on('mouseover', (_, d) => {
 				const tooltipEl = tooltip.node() as HTMLElement;
 				tooltipEl.empty();
-				const title = tooltipEl.createEl('strong', { text: d.label });
+				tooltipEl.createEl('strong', { text: d.label });
 				if (d.focus) {
 					tooltipEl.appendText(' ');
 					tooltipEl.createEl('em', { text: '(focus)' });
+				}
+				const rel = focusRelation.get(d.id);
+				if (rel) {
+					tooltipEl.createEl('br');
+					tooltipEl.createEl('span', {
+						text: RELATION_LABEL[rel],
+						cls: 'neighbourhood-graph-tooltip-relation',
+					});
 				}
 				if (d.type === 'note' && showPath && d.path) {
 					tooltipEl.createEl('br');

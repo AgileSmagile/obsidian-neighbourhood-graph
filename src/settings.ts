@@ -1,6 +1,8 @@
-import { PluginSettingTab, Setting, App, Notice } from 'obsidian';
+import { PluginSettingTab, Setting, App, Notice, setIcon } from 'obsidian';
 import type NeighbourhoodGraphPlugin from './main';
 import type { ColourGroup } from './types';
+
+const EXCALIBRAIN_PLUGIN_URL = 'https://obsidian.md/plugins?id=excalibrain';
 
 interface ObsidianGraphConfig {
 	colorGroups?: Array<{
@@ -10,8 +12,7 @@ interface ObsidianGraphConfig {
 }
 
 function obsidianRgbToHex(rgb: number): string {
-	const hex = rgb.toString(16).padStart(6, '0');
-	return `#${hex}`;
+	return `#${rgb.toString(16).padStart(6, '0')}`;
 }
 
 export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
@@ -44,7 +45,7 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName('Max neighbours')
-			.setDesc('Maximum number of notes shown around the focus note. The most strongly connected neighbours are shown first. Lower values keep the graph readable; raise it for well-connected vaults.')
+			.setDesc('Maximum number of notes shown around the focus note. The most strongly connected neighbours are shown first.')
 			.addText((text) => {
 				text.inputEl.type = 'number';
 				text.inputEl.style.width = '60px';
@@ -58,6 +59,9 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 						}
 					});
 			});
+
+		// --- Display ---
+		this.containerEl.createEl('h3', { text: 'Display' });
 
 		new Setting(this.containerEl)
 			.setName('Show path in tooltip')
@@ -76,7 +80,7 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName('Default node colour')
-			.setDesc('Notes not matching any group use this colour. Set to your theme\'s accent by default.')
+			.setDesc('Notes not matching any group use this colour. Defaults to your theme\'s accent colour.')
 			.addColorPicker((picker) =>
 				picker.setValue(this.plugin.settings.defaultNodeColour)
 					.onChange(async (val) => {
@@ -86,21 +90,19 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 			);
 
 		this.containerEl.createEl('p', {
-			text: 'Assign colours to notes by query. Supported queries: "path:folder/", "tag:#name", or plain text (matches note title). First matching rule wins.',
+			text: 'Assign colours to notes by query. Supported: "path:folder/", "tag:#name", or plain text matching note title. First matching rule wins.',
 			cls: 'setting-item-description',
 		});
 
-		// Import from Obsidian graph button
 		new Setting(this.containerEl)
 			.setName('Import from graph view')
-			.setDesc('Copy colour groups from Obsidian\'s built-in graph view settings')
+			.setDesc('Copy colour groups from Obsidian\'s built-in graph view settings.')
 			.addButton((btn) =>
 				btn.setButtonText('Import').onClick(async () => {
 					await this.importFromGraphView();
 				}),
 			);
 
-		// Existing groups
 		for (let i = 0; i < this.plugin.settings.colourGroups.length; i++) {
 			this.renderColourGroup(this.containerEl, i);
 		}
@@ -113,6 +115,52 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 					this.display();
 				}),
 			);
+
+		// --- Excalibrain integration ---
+		this.containerEl.createEl('h3', { text: 'Excalibrain integration' });
+
+		const excaliContainer = this.containerEl.createDiv();
+		void this.renderExcalibrainSection(excaliContainer);
+	}
+
+	private async renderExcalibrainSection(container: HTMLElement): Promise<void> {
+		const mainJsPath = `${this.app.vault.configDir}/plugins/excalibrain/main.js`;
+		const isInstalled = await this.app.vault.adapter.exists(mainJsPath);
+
+		if (isInstalled) {
+			const statusRow = container.createDiv({ cls: 'ng-excali-status ng-excali-found' });
+			const icon = statusRow.createSpan({ cls: 'ng-excali-status-icon' });
+			setIcon(icon, 'check-circle');
+			statusRow.createSpan({ text: 'Excalibrain is installed' });
+
+			container.createEl('p', {
+				text: 'When enabled, this plugin reads the frontmatter fields Excalibrain uses for typed relationships (parent, child, friend, opposes, previous, next). Matching edges are drawn with distinct line styles, and explicitly typed links receive a strength bonus so they rank higher in the neighbourhood.',
+				cls: 'setting-item-description',
+			});
+
+			new Setting(container)
+				.setName('Use Excalibrain relationships')
+				.setDesc('Read Excalibrain relationship fields to type edges and boost connection strength.')
+				.addToggle((toggle) =>
+					toggle
+						.setValue(this.plugin.settings.excalibrainEnabled)
+						.onChange(async (val) => {
+							this.plugin.settings.excalibrainEnabled = val;
+							await this.plugin.saveSettings();
+						}),
+				);
+		} else {
+			const statusRow = container.createDiv({ cls: 'ng-excali-status ng-excali-missing' });
+			const icon = statusRow.createSpan({ cls: 'ng-excali-status-icon' });
+			setIcon(icon, 'info');
+			statusRow.createSpan({ text: 'Excalibrain is not installed' });
+
+			const desc = container.createEl('p', { cls: 'setting-item-description' });
+			desc.appendText('When Excalibrain is installed, this plugin can read its typed relationship fields (parent, child, friend, opposes, etc.) to draw distinct edge styles and weight connections more accurately. ');
+			const link = desc.createEl('a', { text: 'Get Excalibrain →', href: EXCALIBRAIN_PLUGIN_URL });
+			link.setAttr('target', '_blank');
+			link.setAttr('rel', 'noopener');
+		}
 	}
 
 	private renderColourGroup(container: HTMLElement, index: number): void {
