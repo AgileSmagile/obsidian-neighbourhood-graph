@@ -3,14 +3,15 @@ import { resolve } from "path";
 import { copyFileSync } from "fs";
 
 const prod = process.argv[2] === "production";
+const sandbox = process.argv[2] === "sandbox";
 
 // Dev: output to vault plugin dir for hot reload
 // Production: output to repo root for release
 const outDir = prod
   ? resolve(".")
-  : resolve(
-      "E:/Projects/sonnet-agent/Vault101/.obsidian/plugins/neighbourhood-graph"
-    );
+  : sandbox
+  ? resolve("E:/Projects/sonnet-agent/Vault-DemoSandbox/.obsidian/plugins/neighbourhood-graph")
+  : resolve("E:/Projects/sonnet-agent/Vault101/.obsidian/plugins/neighbourhood-graph");
 
 const ctx = await esbuild.context({
   entryPoints: ["src/main.ts"],
