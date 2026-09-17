@@ -1,4 +1,4 @@
-# Neighbourhood Graph — Project Instructions
+# Neighbourhood Graph: Project Instructions
 
 ## What this is
 
@@ -69,9 +69,9 @@ The `obsidian-graph-label-fix` repo at `E:\Projects\obsidian-graph-label-fix\` w
 - Release: bump `manifest.json` + `versions.json`, build, copy `main.js` to root, `gh release create vX.Y.Z --title "vX.Y.Z" main.js manifest.json`
 
 ### What NOT to do
-- Don't use `console.log` — community portal rejects it. Use `console.debug` for dev
-- Don't use `const plugin = this` — triggers `no-this-alias`. Use arrow closures: `const getSettings = () => this.settings`
-- Don't use `element.style.cssText` — use Obsidian's `el.setCssStyles({ ... })`
+- Don't use `console.log`: the community portal rejects it. Use `console.debug` for dev
+- Don't use `const plugin = this`: triggers `no-this-alias`. Use arrow closures: `const getSettings = () => this.settings`
+- Don't use `element.style.cssText`: use Obsidian's `el.setCssStyles({ ... })`
 
 ## Source code to port
 

@@ -11,7 +11,7 @@ Opens as a right-sidebar panel. As you navigate between notes, the graph recentr
 - **The focus note** highlighted with an amber glow, largest node
 - **Neighbour notes** connected via shared tags or backlinks, sized by relevance
 - **Shared tag nodes** (diamond shapes) representing tags that connect notes
-- **Typed edges** — when Excalibrain is installed, edges between related notes are drawn with distinct line styles
+- **Typed edges** when Excalibrain is installed. Related notes get distinct line styles
 
 Hover any node to highlight its connections. At depth 2, secondary connections also light up, revealing the structure around any note in the neighbourhood.
 
@@ -56,7 +56,7 @@ Quick access to the controls you reach for most often.
 | Size by relevance | How much node size varies by connection strength. 0 = uniform, 10 = dramatic. | 5 |
 | Max node size | Maximum radius in pixels of the largest neighbour node. Reduce for a compact sidebar. | 10 |
 
-**Physics sliders** — four controls for fine-tuning the graph layout: line colour, line thickness, spread (repulsion), and link pull (clustering). Changes are reflected live as you drag without rebuilding the graph.
+**Physics sliders.** Four controls for tuning the layout: line colour, line thickness, spread (repulsion), and link pull (clustering). Changes apply live as you drag. The graph is not rebuilt.
 
 ### Plugin settings tab (Settings > Neighbourhood Graph)
 
@@ -72,9 +72,9 @@ Quick access to the controls you reach for most often.
 
 Assign colours to notes by query. Three query types are supported:
 
-- `path:people/` — matches notes whose path starts with `people/`
-- `tag:#project` — matches notes carrying the `#project` tag
-- Plain text — matches against note title
+- `path:people/` matches notes whose path starts with `people/`
+- `tag:#project` matches notes carrying the `#project` tag
+- Plain text matches against the note title
 
 First matching rule wins. Groups are collapsible in the settings tab once at least one exists. Use the **Import** button to copy colour groups directly from Obsidian's built-in graph view.
 
@@ -91,9 +91,9 @@ If [Excalibrain](https://obsidian.md/plugins?id=excalibrain) is installed, this 
 
 The plugin detects three states:
 
-- **Not installed** — plain edges only; the settings tab explains how to get Excalibrain
-- **Installed, not yet opened** — uses Excalibrain's built-in English field names
-- **Installed and configured** — reads your saved Excalibrain settings automatically
+- **Not installed**: plain edges only. The settings tab explains how to get Excalibrain
+- **Installed, not yet opened**: uses Excalibrain's built-in English field names
+- **Installed and configured**: reads your saved Excalibrain settings automatically
 
 Toggle the integration on or off with the **Use Excalibrain relationships** toggle in the settings tab. When active, typed links receive a strength bonus so they rank higher in the neighbourhood.
 
@@ -111,11 +111,11 @@ The plugin reads Obsidian's metadata cache for tags, resolved links, and frontma
 - Well-connected hub notes rank higher (logarithmic scaling)
 - Excalibrain-typed relationships receive an additional strength bonus
 
-The top N neighbours (configurable) are shown. Node size reflects relevance to the focus note — salience scaling is anchored to the displayed set, so variation fills the full range regardless of how many notes are capped.
+The top N neighbours (configurable) are shown. Node size reflects relevance to the focus note. Scaling is anchored to the displayed set, so the size range is always fully used, however many notes are capped.
 
 ## Works well with
 
-**[Graph Label Above](https://github.com/AgileSmagile/obsidian-graph-label-above)** — moves node labels above nodes in Obsidian's full graph view so they are not obscured by an enlarged mouse pointer. If you use Neighbourhood Graph alongside the built-in graph view, this is a natural companion.
+**[Graph Label Above](https://github.com/AgileSmagile/obsidian-graph-label-above)** moves node labels above nodes in Obsidian's full graph view, so an enlarged mouse pointer does not hide them. A natural companion if you use both graphs.
 
 ## Licence
 
