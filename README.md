@@ -2,7 +2,7 @@
 
 An Obsidian plugin that shows the current note's neighbourhood as an interactive force-directed graph in a sidebar panel. Navigate your vault by exploring connections between notes, shared tags, and backlinks.
 
-> Screenshots will be added in a future update.
+![Neighbourhood graph in the sidebar, with colour groups and size by relevance](docs/screenshot-main.png)
 
 ## What it does
 
@@ -14,6 +14,8 @@ Opens as a right-sidebar panel. As you navigate between notes, the graph recentr
 - **Typed edges** when Excalibrain is installed. Related notes get distinct line styles
 
 Hover any node to highlight its connections. At depth 2, secondary connections also light up, revealing the structure around any note in the neighbourhood.
+
+![Hovering a node highlights its direct and secondary connections](docs/screenshot-highlight.png)
 
 ### Interactions
 
@@ -78,6 +80,8 @@ Assign colours to notes by query. Three query types are supported:
 
 First matching rule wins. Groups are collapsible in the settings tab once at least one exists. Use the **Import** button to copy colour groups directly from Obsidian's built-in graph view.
 
+![The floating settings panel, with import from graph view](docs/screenshot-import.png)
+
 ## Excalibrain integration
 
 If [Excalibrain](https://obsidian.md/plugins?id=excalibrain) is installed, this plugin reads its typed relationship fields from note frontmatter to draw distinct edge styles and weight connections more accurately.
@@ -99,6 +103,8 @@ Toggle the integration on or off with the **Use Excalibrain relationships** togg
 
 Hover any typed edge to see the relationship label ("parent of", "friend", "opposes", etc.) in a tooltip.
 
+![Typed edges: solid parent, dashed friend, dotted opposes, dash-dot previous and next](docs/screenshot-typed-edges.png)
+
 The legend in the top-left of the graph panel shows edge style swatches that reflect your current line colour and thickness settings, so the key always matches the graph.
 
 ## How it works
@@ -116,6 +122,10 @@ The top N neighbours (configurable) are shown. Node size reflects relevance to t
 ## Works well with
 
 **[Graph Label Above](https://github.com/AgileSmagile/obsidian-graph-label-above)** moves node labels above nodes in Obsidian's full graph view, so an enlarged mouse pointer does not hide them. A natural companion if you use both graphs.
+
+## Development
+
+Screenshots in `docs/` are generated, not hand-captured. `npm run screenshots` builds the plugin into the demo sandbox vault, launches Obsidian with a remote debugging port, drives it over the Chrome DevTools Protocol, and writes each shot from a fixed focus note. Change the `SHOTS` list in `scripts/screenshots.mjs` to add or retune a shot.
 
 ## Licence
 

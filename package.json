@@ -8,6 +8,8 @@
     "build": "node esbuild.config.mjs production",
     "lint": "eslint src/ --ext .ts",
     "dev:sandbox": "node esbuild.config.mjs sandbox",
+    "build:sandbox": "node esbuild.config.mjs sandbox once",
+    "screenshots": "npm run build:sandbox && node scripts/screenshots.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -17,6 +19,7 @@
     "esbuild": "0.17.3",
     "eslint": "^8.0.0",
     "obsidian": "latest",
+    "playwright-core": "^1.63.0",
     "tslib": "2.4.0",
     "typescript": "5.0.4",
     "vitest": "^4.1.7"

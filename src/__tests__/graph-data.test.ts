@@ -493,3 +493,74 @@ describe('focus node', () => {
     expect(edges).toHaveLength(0)
   })
 })
+
+// ── Excalibrain: typed relationships as neighbours ────────────────────────
+
+describe('Excalibrain: plain-name typed relationships create neighbours', () => {
+  const fieldLookup = buildFieldLookup({
+    parents: ['Parent'],
+    children: ['Children'],
+    leftFriends: ['Friends'],
+    rightFriends: ['opposes'],
+    previous: ['Previous'],
+    next: ['Next'],
+  })
+
+  // Mirrors the Philosophy folder in the demo sandbox: no wikilinks, no tags,
+  // only Excalibrain-style plain note names in frontmatter.
+  const focus = file('Philosophy/Existentialism.md')
+  const files = [
+    focus,
+    file('Philosophy/Philosophy.md'),
+    file('Philosophy/Stoicism.md'),
+    file('Philosophy/Absurdism.md'),
+    file('Philosophy/Nihilism.md'),
+    file('Philosophy/Virtue Ethics.md'),
+  ]
+  const app = mockApp({
+    files,
+    resolvedLinks: {},
+    frontmatter: {
+      'Philosophy/Existentialism.md': { Parent: 'Philosophy', Previous: 'Stoicism', opposes: ['Nihilism'], Friends: ['Absurdism'] },
+      'Philosophy/Stoicism.md': { Parent: 'Philosophy', Next: 'Existentialism' },
+      'Philosophy/Virtue Ethics.md': { Friends: ['Stoicism', 'Existentialism'] },
+      'Philosophy/Philosophy.md': { Children: ['Stoicism', 'Existentialism'] },
+    },
+    linkResolution: {
+      Philosophy: 'Philosophy/Philosophy.md',
+      Stoicism: 'Philosophy/Stoicism.md',
+      Absurdism: 'Philosophy/Absurdism.md',
+      Nihilism: 'Philosophy/Nihilism.md',
+      Existentialism: 'Philosophy/Existentialism.md',
+    },
+  })
+
+  it('includes every typed neighbour, outbound and inbound, with no wikilinks at all', () => {
+    const { nodes } = buildNeighbourhood(focus, app, settings, fieldLookup)
+    const ids = nodes.map(n => n.id).sort()
+    expect(ids).toEqual([
+      'Philosophy/Absurdism.md',
+      'Philosophy/Existentialism.md',
+      'Philosophy/Nihilism.md',
+      'Philosophy/Philosophy.md',
+      'Philosophy/Stoicism.md',
+      'Philosophy/Virtue Ethics.md',
+    ])
+  })
+
+  it('draws a typed edge to each neighbour with the correct relationship', () => {
+    const { edges } = buildNeighbourhood(focus, app, settings, fieldLookup)
+    const typeFor = (path: string) =>
+      edges.find(e => e.target === path || e.source === path)?.relationType
+    expect(typeFor('Philosophy/Philosophy.md')).toBe('parent')
+    expect(typeFor('Philosophy/Stoicism.md')).toBe('previous')
+    expect(typeFor('Philosophy/Nihilism.md')).toBe('rightFriend')
+    expect(typeFor('Philosophy/Absurdism.md')).toBe('leftFriend')
+    expect(typeFor('Philosophy/Virtue Ethics.md')).toBe('leftFriend')
+  })
+
+  it('ignores typed relationships when Excalibrain integration is off', () => {
+    const { nodes } = buildNeighbourhood(focus, app, settings, null)
+    expect(nodes).toHaveLength(1)
+  })
+})

@@ -2,11 +2,14 @@ import esbuild from "esbuild";
 import { resolve } from "path";
 import { copyFileSync } from "fs";
 
-const prod = process.argv[2] === "production";
-const sandbox = process.argv[2] === "sandbox";
+const args = process.argv.slice(2);
+const prod = args.includes("production");
+const sandbox = args.includes("sandbox");
+const once = prod || args.includes("once");
 
 // Dev: output to vault plugin dir for hot reload
 // Production: output to repo root for release
+// Sandbox: output to the demo vault (watch by default, "once" for a single build)
 const outDir = prod
   ? resolve(".")
   : sandbox
@@ -32,12 +35,15 @@ const ctx = await esbuild.context({
   outfile: `${outDir}/main.js`,
 });
 
-if (prod) {
-  await ctx.rebuild();
-  process.exit(0);
-} else {
+if (!prod) {
   // Copy manifest and styles to vault plugin dir for Obsidian to detect
   copyFileSync(resolve("manifest.json"), `${outDir}/manifest.json`);
   copyFileSync(resolve("styles.css"), `${outDir}/styles.css`);
+}
+
+if (once) {
+  await ctx.rebuild();
+  process.exit(0);
+} else {
   await ctx.watch();
 }

@@ -113,22 +113,23 @@ export function buildNeighbourhood(
 		neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + hubScore);
 	}
 
-	// Excalibrain bonus: explicit typed relationships carry more weight than plain links
+	// Excalibrain typed relationships: these are neighbours in their own right, not just a bonus.
+	// Plain-name frontmatter values (Excalibrain's native format) never appear in resolvedLinks,
+	// so a note connected only by typed fields would otherwise have no neighbourhood at all.
 	if (excalibrainFields) {
-		// Check focus note's frontmatter for outbound typed links
+		// Focus note's frontmatter: outbound typed links
 		for (const { relType, targetPath } of getTypedFrontmatterLinks(focusFile, app, excalibrainFields)) {
-			if (neighbourStrength.has(targetPath)) {
-				neighbourStrength.set(targetPath, (neighbourStrength.get(targetPath) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
-			}
+			if (targetPath === focusFile.path) continue;
+			neighbourStrength.set(targetPath, (neighbourStrength.get(targetPath) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
+			focusAllLinks.add(targetPath);
 		}
-		// Check each potential neighbour's frontmatter for typed links back to focus
-		for (const [notePath] of neighbourStrength) {
-			const file = app.vault.getFileByPath(notePath);
-			if (!file) continue;
+		// Every other note's frontmatter: inbound typed links to the focus
+		for (const file of allFiles) {
+			if (file.path === focusFile.path) continue;
 			for (const { relType, targetPath } of getTypedFrontmatterLinks(file, app, excalibrainFields)) {
-				if (targetPath === focusFile.path) {
-					neighbourStrength.set(notePath, (neighbourStrength.get(notePath) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
-				}
+				if (targetPath !== focusFile.path) continue;
+				neighbourStrength.set(file.path, (neighbourStrength.get(file.path) ?? 0) + RELATION_STRENGTH_BONUS[relType]);
+				focusAllLinks.add(file.path);
 			}
 		}
 	}

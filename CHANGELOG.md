@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Typed relationships now create neighbours.** Excalibrain-style plain note names in frontmatter (`Parent: Philosophy`, `Friends: [Absurdism]`) previously only boosted notes that were already neighbours through tags or wikilinks. A note connected only by typed fields showed an empty graph. Typed links, outbound and inbound, are now neighbours in their own right.
+
+### Added
+
+- `npm run screenshots` regenerates the README screenshots from the demo sandbox vault over the Chrome DevTools Protocol.
+
 ## 0.2.0 (2026-05-20)
 
 ### Added
