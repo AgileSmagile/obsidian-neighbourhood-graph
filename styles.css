@@ -18,7 +18,7 @@
 	height: 100%;
 }
 
-/* Floating control buttons — top-right of canvas */
+/* Floating control buttons: top-right of canvas */
 .ng-control-bar {
 	position: absolute;
 	top: 8px;
@@ -53,7 +53,7 @@
 	height: 16px;
 }
 
-/* Floating settings panel — overlays graph, top-right */
+/* Floating settings panel: overlays graph, top-right */
 .ng-settings-panel {
 	position: absolute;
 	top: 8px;
@@ -213,7 +213,7 @@
 	font-size: 11px;
 }
 
-/* Draggable legend overlay — top-left */
+/* Draggable legend overlay: top-left */
 .ng-legend {
 	position: absolute;
 	top: 8px;
@@ -359,7 +359,7 @@
 	font-style: italic;
 }
 
-/* Import row — label + discrete icon button */
+/* Import row: label + discrete icon button */
 .ng-import-row {
 	display: flex;
 	align-items: center;

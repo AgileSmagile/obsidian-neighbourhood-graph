@@ -111,7 +111,7 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 			cls: 'setting-item-description',
 		});
 
-		// Import row — icon button only, less prominent than a labelled button
+		// Import row: icon button only, less prominent than a labelled button
 		const importRow = this.containerEl.createDiv({ cls: 'ng-import-row' });
 		importRow.createSpan({ text: 'Import from Obsidian graph view', cls: 'ng-import-label' });
 		const importIconBtn = new ButtonComponent(importRow);
@@ -132,7 +132,7 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 		const chevron = disclosureRow.createSpan({ cls: 'ng-disclosure-chevron' });
 		setIcon(chevron, 'chevron-down');
 		const countLabel = disclosureRow.createSpan({
-			text: groupCount === 0 ? 'No groups — add one below' : `${groupCount} group${groupCount === 1 ? '' : 's'}`,
+			text: groupCount === 0 ? 'No groups yet. Add one below' : `${groupCount} group${groupCount === 1 ? '' : 's'}`,
 			cls: 'ng-disclosure-label',
 		});
 
@@ -190,7 +190,7 @@ export class NeighbourhoodGraphSettingTab extends PluginSettingTab {
 			const statusRow = container.createDiv({ cls: 'ng-excali-status ng-excali-pending' });
 			const icon = statusRow.createSpan({ cls: 'ng-excali-status-icon' });
 			setIcon(icon, 'clock');
-			statusRow.createSpan({ text: 'Excalibrain installed — using default fields' });
+			statusRow.createSpan({ text: 'Excalibrain installed, using default fields' });
 
 			container.createEl('p', {
 				text: 'Excalibrain hasn\'t been opened yet so it has no saved configuration. This plugin is currently using Excalibrain\'s built-in English field names (Parent, Children, Friends, etc.). Open Excalibrain to generate its config and customise which fields map to which relationship types.',

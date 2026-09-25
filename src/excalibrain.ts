@@ -39,7 +39,7 @@ export async function loadExcalibrainConfig(app: App): Promise<ExcalibrainConfig
 
 	try {
 		if (!(await app.vault.adapter.exists(dataJson))) {
-			// Installed but not yet configured — use built-in defaults
+			// Installed but not yet configured: use built-in defaults
 			return EXCALIBRAIN_DEFAULTS;
 		}
 		const raw  = await app.vault.adapter.read(dataJson);

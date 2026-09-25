@@ -16,7 +16,7 @@ export class NeighbourhoodGraphView extends ItemView {
 	private focusFile: TFile | null = null;
 	private excalibrainFields: Map<string, EdgeRelationType> | null = null;
 	private _legendEdgeLines: SVGLineElement[] = [];
-	/** Paths of all notes currently visible in the graph — used to filter metadata change events. */
+	/** Paths of all notes currently visible in the graph: used to filter metadata change events. */
 	private _relevantPaths = new Set<string>();
 
 	constructor(leaf: WorkspaceLeaf, plugin: NeighbourhoodGraphPlugin) {
@@ -62,7 +62,7 @@ export class NeighbourhoodGraphView extends ItemView {
 		this.settingsPanel = this.graphContainer.createDiv({ cls: 'ng-settings-panel ng-panel-hidden' });
 		this.buildSettingsPanel();
 
-		// Draggable, collapsible legend — top-left
+		// Draggable, collapsible legend: top-left
 		const legend = this.graphContainer.createDiv({ cls: 'ng-legend' });
 
 		const legendHeader = legend.createDiv({ cls: 'ng-legend-header' });
@@ -113,7 +113,7 @@ export class NeighbourhoodGraphView extends ItemView {
 				if (hint.dash) line.setAttribute('stroke-dasharray', hint.dash);
 				svg.appendChild(line);
 				row.appendChild(svg);
-				// Use createSpan (Obsidian API) rather than appendText — mixing native
+				// Use createSpan (Obsidian API) rather than appendText: mixing native
 				// appendChild with appendText on the same element drops the text node.
 				row.createSpan({ text: hint.text });
 				this._legendEdgeLines.push(line);
@@ -181,7 +181,7 @@ export class NeighbourhoodGraphView extends ItemView {
 			}, 200, true)),
 		);
 
-		// Listen for metadata changes — only rebuild when a file relevant to the
+		// Listen for metadata changes: only rebuild when a file relevant to the
 		// current graph changes. 'resolved' fires for all background cache work
 		// (sync, other plugins) and causes constant spurious redraws.
 		this.registerEvent(
@@ -338,11 +338,11 @@ export class NeighbourhoodGraphView extends ItemView {
 		salienceInput.min = '0';
 		salienceInput.max = '10';
 		salienceInput.value = String(this.plugin.settings.salienceImpact);
-		// input: track value only — no rebuild mid-drag
+		// input: track value only: no rebuild mid-drag
 		salienceInput.addEventListener('input', () => {
 			this.plugin.settings.salienceImpact = Number(salienceInput.value);
 		});
-		// change: fires on mouseup — safe to save and rebuild now
+		// change: fires on mouseup: safe to save and rebuild now
 		salienceInput.addEventListener('change', async () => {
 			await this.plugin.saveSettings();
 		});
@@ -391,7 +391,7 @@ export class NeighbourhoodGraphView extends ItemView {
 			input.value = String(this.plugin.settings[s.key]);
 
 			const key = s.key;
-			// input: drive the live simulation — no save, no rebuild
+			// input: drive the live simulation: no save, no rebuild
 			input.addEventListener('input', () => {
 				const v = Number(input.value);
 				if (this.renderer) this.renderer.updateSlider(key, v);
@@ -404,14 +404,14 @@ export class NeighbourhoodGraphView extends ItemView {
 					this._legendEdgeLines.forEach((l) => l.setAttribute('stroke-width', w));
 				}
 			});
-			// change: persist on mouseup — silent save, no rebuild needed
+			// change: persist on mouseup: silent save, no rebuild needed
 			input.addEventListener('change', async () => {
 				this.plugin.settings[key] = Number(input.value);
 				await this.plugin.saveSettingsOnly();
 			});
 		}
 
-		// Content & display — signpost to plugin settings
+		// Content & display: signpost to plugin settings
 		panel.createEl('div', { text: 'Content & display', cls: 'ng-section-label' });
 		panel.createEl('p', {
 			text: 'Colour groups, tooltip options, and Excalibrain integration are in plugin settings.',

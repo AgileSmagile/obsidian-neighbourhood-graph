@@ -212,7 +212,7 @@ export function buildNeighbourhood(
 
 /**
  * Returns all typed relationships declared in a file's frontmatter, resolved to target paths.
- * Handles both [[wikilink]] and plain note name formats — Excalibrain uses plain names natively,
+ * Handles both [[wikilink]] and plain note name formats: Excalibrain uses plain names natively,
  * while some users write [[wikilinks]] in frontmatter. Obsidian's frontmatterLinks cache only
  * covers the wikilink variant, so we also read raw frontmatter string values.
  */
@@ -226,7 +226,7 @@ function getTypedFrontmatterLinks(
 
 	const seen = new Map<string, EdgeRelationType>(); // targetPath → relType (dedup)
 
-	// 1. Wikilink-based frontmatter links — Obsidian resolves [[...]] natively
+	// 1. Wikilink-based frontmatter links: Obsidian resolves [[...]] natively
 	for (const fmLink of cache.frontmatterLinks ?? []) {
 		const relType = fieldLookup.get(fmLink.key.toLowerCase());
 		if (!relType) continue;
@@ -234,7 +234,7 @@ function getTypedFrontmatterLinks(
 		if (resolved) seen.set(resolved, relType);
 	}
 
-	// 2. Plain note name frontmatter values — Excalibrain's native format
+	// 2. Plain note name frontmatter values: Excalibrain's native format
 	for (const [key, value] of Object.entries(cache.frontmatter ?? {})) {
 		const relType = fieldLookup.get(key.toLowerCase());
 		if (!relType) continue;

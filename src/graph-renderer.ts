@@ -17,12 +17,12 @@ interface SimEdge extends d3.SimulationLinkDatum<SimNode> {
 }
 
 const RELATION_DASH: Record<EdgeRelationType, string | null> = {
-	parent:      null,        // solid — structural hierarchy
-	child:       null,        // solid — structural hierarchy
-	leftFriend:  '5 3',       // dashed — lateral association
-	rightFriend: '2 3',       // dotted — opposing/contrast
-	previous:    '8 3 2 3',   // dash-dot — sequential
-	next:        '8 3 2 3',   // dash-dot — sequential
+	parent:      null,        // solid: structural hierarchy
+	child:       null,        // solid: structural hierarchy
+	leftFriend:  '5 3',       // dashed: lateral association
+	rightFriend: '2 3',       // dotted: opposing/contrast
+	previous:    '8 3 2 3',   // dash-dot: sequential
+	next:        '8 3 2 3',   // dash-dot: sequential
 };
 
 const RELATION_LABEL: Record<EdgeRelationType, string> = {
@@ -358,7 +358,7 @@ export class GraphRenderer {
 				}
 			});
 
-		// Render node shapes — sized by connection strength
+		// Render node shapes: sized by connection strength
 		const settingsRef = this.settings;
 		node.each(function (this: SVGGElement, d: SimNode) {
 			const sel = d3.select(this);
@@ -379,7 +379,7 @@ export class GraphRenderer {
 					.attr('stroke', d.focus ? HIGHLIGHT_COLOUR : '#fff')
 					.attr('stroke-width', d.focus ? 3 : 1.5);
 			} else {
-				// Tag — diamond
+				// Tag: diamond
 				const r = d.r;
 				sel.append('polygon')
 					.attr('points', `0,${-r} ${r},0 0,${r} ${-r},0`)
@@ -389,7 +389,7 @@ export class GraphRenderer {
 			}
 		});
 
-		// Node labels — font size scales with node radius for notes
+		// Node labels: font size scales with node radius for notes
 		node.append('text')
 			.attr('text-anchor', 'middle')
 			.attr('font-size', (d) => {
@@ -481,7 +481,7 @@ export class GraphRenderer {
 			})
 			.on('mouseout', () => tooltip.style('opacity', '0'));
 
-		// Edge hover tooltip — typed edges only
+		// Edge hover tooltip: typed edges only
 		linkHitArea
 			.on('mouseover', (_, e) => {
 				if (!e.relationType) return;

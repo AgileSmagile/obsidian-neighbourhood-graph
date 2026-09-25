@@ -1,7 +1,7 @@
 import { Plugin, addIcon } from 'obsidian';
 
 const NG_ICON_ID = 'neighbourhood-graph-icon';
-// Scope + 3 satellites — coordinates in 0 0 100 100 space (Obsidian addIcon viewBox)
+// Scope + 3 satellites: coordinates in 0 0 100 100 space (Obsidian addIcon viewBox)
 // Original 24×24 design scaled ×4.167
 const NG_ICON_SVG = `<circle cx="50" cy="50" r="43.8" fill="none" stroke="currentColor" stroke-width="5" stroke-opacity="0.65" stroke-linecap="round"/>
 <line x1="50" y1="2.1" x2="50" y2="8.3"   stroke="currentColor" stroke-width="5.4" stroke-linecap="round"/>
@@ -52,7 +52,7 @@ export default class NeighbourhoodGraphPlugin extends Plugin {
 		console.debug('[neighbourhood-graph] unloaded');
 	}
 
-	/** Persist settings without notifying views — use for sliders that update live via other means */
+	/** Persist settings without notifying views: use for sliders that update live via other means */
 	async saveSettingsOnly(): Promise<void> {
 		await this.saveData(this.settings);
 	}

@@ -2,7 +2,7 @@
 
 An Obsidian plugin that shows the current note's neighbourhood as an interactive force-directed graph in a sidebar panel. Navigate your vault by exploring connections between notes, shared tags, and backlinks.
 
-![Neighbourhood graph in the sidebar, with colour groups and size by relevance](docs/screenshot-main.png)
+![Neighbourhood graph in the sidebar, with colour groups and size by relevance](https://raw.githubusercontent.com/AgileSmagile/obsidian-neighbourhood-graph/main/docs/screenshot-main.png)
 
 ## What it does
 
@@ -15,7 +15,7 @@ Opens as a right-sidebar panel. As you navigate between notes, the graph recentr
 
 Hover any node to highlight its connections. At depth 2, secondary connections also light up, revealing the structure around any note in the neighbourhood.
 
-![Hovering a node highlights its direct and secondary connections](docs/screenshot-highlight.png)
+![Hovering a node highlights its direct and secondary connections](https://raw.githubusercontent.com/AgileSmagile/obsidian-neighbourhood-graph/main/docs/screenshot-highlight.png)
 
 ### Interactions
 
@@ -80,7 +80,7 @@ Assign colours to notes by query. Three query types are supported:
 
 First matching rule wins. Groups are collapsible in the settings tab once at least one exists. Use the **Import** button to copy colour groups directly from Obsidian's built-in graph view.
 
-![The floating settings panel, with import from graph view](docs/screenshot-import.png)
+![The floating settings panel, with import from graph view](https://raw.githubusercontent.com/AgileSmagile/obsidian-neighbourhood-graph/main/docs/screenshot-import.png)
 
 ## Excalibrain integration
 
@@ -103,7 +103,7 @@ Toggle the integration on or off with the **Use Excalibrain relationships** togg
 
 Hover any typed edge to see the relationship label ("parent of", "friend", "opposes", etc.) in a tooltip.
 
-![Typed edges: solid parent, dashed friend, dotted opposes, dash-dot previous and next](docs/screenshot-typed-edges.png)
+![Typed edges: solid parent, dashed friend, dotted opposes, dash-dot previous and next](https://raw.githubusercontent.com/AgileSmagile/obsidian-neighbourhood-graph/main/docs/screenshot-typed-edges.png)
 
 The legend in the top-left of the graph panel shows edge style swatches that reflect your current line colour and thickness settings, so the key always matches the graph.
 

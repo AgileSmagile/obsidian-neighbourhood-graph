@@ -1,5 +1,5 @@
 /**
- * Tests for graph-data.ts — neighbourhood scoring and Excalibrain integration.
+ * Tests for graph-data.ts: neighbourhood scoring and Excalibrain integration.
  *
  * Tests the pure logic of buildNeighbourhood by mocking the Obsidian API
  * (App, TFile, metadataCache). No DOM or Obsidian runtime required.
@@ -397,7 +397,7 @@ describe('Excalibrain: strength bonus', () => {
     const untyped = file('untyped.md')
     const fieldLookup = buildFieldLookup(excalibrainConfig)
 
-    // Both notes linked from focus — typed one also declared as Child
+    // Both notes linked from focus: typed one also declared as Child
     const app = mockApp({
       files: [focus, typed, untyped],
       resolvedLinks: {
