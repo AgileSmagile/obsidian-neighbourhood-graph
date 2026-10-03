@@ -17,13 +17,13 @@ Do not ask James for permission to start work, move cards, or choose between imp
 
 Follow `E:\Projects\sonnet-agent\agent_guidelines.md` for board workflow and autonomy. Cards live on CapDev board (board 4), lane 6. Use prefix `[NG]` for card titles and comments.
 
-Key commands (run from `E:\Projects\sonnet-agent`):
+Key commands (run from this project's own directory - do NOT cd into sonnet-agent first, bin/bmap picks its Businessmap key based on the calling directory):
 
 ```bash
-bash bin/bmap card <id>
-bash bin/bmap wip-age
-bash bin/bmap move <id> <col>
-bash bin/bmap comment <id> "text"
+bash E:/Projects/sonnet-agent/bin/bmap card <id>
+bash E:/Projects/sonnet-agent/bin/bmap wip-age
+bash E:/Projects/sonnet-agent/bin/bmap move <id> <col>
+bash E:/Projects/sonnet-agent/bin/bmap comment <id> "text"
 ```
 
 ## Session startup routine (mandatory, every session)
